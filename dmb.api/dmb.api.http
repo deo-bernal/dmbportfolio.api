@@ -1,0 +1,6 @@
+@dmb.api_HostAddress = http://localhost:5080
+
+GET {{dmb.api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
