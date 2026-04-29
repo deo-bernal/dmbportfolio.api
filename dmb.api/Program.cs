@@ -133,6 +133,23 @@ var app = builder.Build();
 
 app.UseForwardedHeaders();
 
+var configuredPathBase = builder.Configuration["App:PathBase"]
+    ?? Environment.GetEnvironmentVariable("APP_PATH_BASE");
+if (!string.IsNullOrWhiteSpace(configuredPathBase))
+{
+    configuredPathBase = configuredPathBase.Trim();
+    if (!configuredPathBase.StartsWith('/'))
+    {
+        configuredPathBase = "/" + configuredPathBase;
+    }
+
+    configuredPathBase = configuredPathBase.TrimEnd('/');
+    if (!string.IsNullOrWhiteSpace(configuredPathBase))
+    {
+        app.UsePathBase(configuredPathBase);
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -147,8 +164,6 @@ if (!app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.UsePathBase("/myapp");
 
 // Map controllers with attribute routing
 app.MapControllers();
