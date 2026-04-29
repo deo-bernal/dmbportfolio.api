@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace dmb.api.Controllers
 {
     [ApiController]
-    [Authorize]
+    //[Authorize]
     [Route("api/[controller]")]
 
     public class ProfileController : ControllerBase
