@@ -127,6 +127,7 @@ builder.Services.AddSingleton<IMapper>(mapperConfiguration.CreateMapper());
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IDmbReadRepository, DmbReadRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IDmbReadService, DmbReadService>();
 
 var app = builder.Build();

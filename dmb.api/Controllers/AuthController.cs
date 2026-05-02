@@ -1,12 +1,15 @@
+using Dmb.Data.Context;
 using Dmb.Model.Dtos;
 using Dmb.Service.Interface;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 [ApiController]
@@ -16,12 +19,21 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly IAuthService _authService;
     private readonly IMemoryCache _cache;
+    private readonly DmbDbContext _context;
+    private readonly IEmailService _emailService;
 
-    public AuthController(IConfiguration configuration, IAuthService authService, IMemoryCache cache)
+    public AuthController(
+        IConfiguration configuration,
+        IAuthService authService,
+        IMemoryCache cache,
+        DmbDbContext context,
+        IEmailService emailService)
     {
         _configuration = configuration;
         _authService = authService;
         _cache = cache;
+        _context = context;
+        _emailService = emailService;
     }
 
     [HttpPost("login")]
@@ -109,5 +121,89 @@ public class AuthController : ControllerBase
             message = "Logged out successfully.",
             username
         });
+    }
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto request, CancellationToken cancellationToken)
+    {
+        var email = request.Email.Trim();
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+
+        if (user is null)
+        {
+            return Ok(new { message = "If that email exists, a reset link has been sent." });
+        }
+
+        var existingTokens = await _context.PasswordResetTokens
+            .Where(t => t.UserId == user.UserId)
+            .ToListAsync(cancellationToken);
+        if (existingTokens.Count > 0)
+        {
+            _context.PasswordResetTokens.RemoveRange(existingTokens);
+        }
+
+        var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        var resetToken = new Dmb.Data.Entities.PasswordResetToken
+        {
+            UserId = user.UserId,
+            Token = token,
+            ExpiresAt = DateTimeOffset.UtcNow.AddHours(1),
+            IsUsed = false
+        };
+
+        _context.PasswordResetTokens.Add(resetToken);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        var frontendUrl = (_configuration["App:FrontendUrl"] ?? string.Empty).TrimEnd('/');
+        if (string.IsNullOrWhiteSpace(frontendUrl))
+        {
+            throw new InvalidOperationException("App:FrontendUrl is not configured.");
+        }
+
+        var resetLink = $"{frontendUrl}/reset-password?token={Uri.EscapeDataString(token)}";
+
+        try
+        {
+            await _emailService.SendPasswordResetEmailAsync(user.Email, resetLink, cancellationToken);
+        }
+        catch
+        {
+            _context.PasswordResetTokens.Remove(resetToken);
+            await _context.SaveChangesAsync(cancellationToken);
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new { message = "Unable to send the reset email. Please try again later." });
+        }
+
+        return Ok(new { message = "If that email exists, a reset link has been sent." });
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto request, CancellationToken cancellationToken)
+    {
+        if (!string.Equals(request.NewPassword, request.ConfirmPassword, StringComparison.Ordinal))
+        {
+            return BadRequest(new { message = "Password and confirmation do not match." });
+        }
+
+        var resetToken = await _context.PasswordResetTokens
+            .Include(t => t.User)
+            .FirstOrDefaultAsync(t => t.Token == request.Token, cancellationToken);
+
+        if (resetToken is null || resetToken.IsUsed || resetToken.ExpiresAt < DateTimeOffset.UtcNow)
+        {
+            return BadRequest(new { message = "Reset link is invalid or has expired." });
+        }
+
+        var (passwordHash, passwordSalt) = _authService.CreatePasswordHash(request.NewPassword);
+        resetToken.User.PasswordHash = passwordHash;
+        resetToken.User.PasswordSalt = passwordSalt;
+
+        _context.PasswordResetTokens.Remove(resetToken);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { message = "Password reset successfully." });
     }
 }

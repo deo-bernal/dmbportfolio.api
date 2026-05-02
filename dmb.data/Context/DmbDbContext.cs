@@ -13,6 +13,7 @@ namespace Dmb.Data.Context
         public DbSet<UserDetails> UserDetails { get; set; } = null!;
         public DbSet<Project> Projects { get; set; } = null!;
         public DbSet<RevokedToken> RevokedTokens { get; set; } = null!;
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -50,11 +51,22 @@ namespace Dmb.Data.Context
                 entity.HasIndex(token => token.Jti).IsUnique();
             });
 
+            modelBuilder.Entity<PasswordResetToken>(entity =>
+            {
+                entity.HasIndex(t => t.Token).IsUnique().HasDatabaseName("UX_PasswordResetToken_Token");
+                entity.HasOne(t => t.User)
+                    .WithMany(u => u.PasswordResetTokens)
+                    .HasForeignKey(t => t.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(t => t.CreatedAt).ValueGeneratedOnAdd();
+            });
+
             // Configure CreatedAt to be generated on add (consumer may set default in DB/provider)
             modelBuilder.Entity<User>().Property(u => u.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<UserDetails>().Property(ud => ud.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<Project>().Property(p => p.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<RevokedToken>().Property(token => token.CreatedAt).ValueGeneratedOnAdd();
+            modelBuilder.Entity<PasswordResetToken>().Property(t => t.CreatedAt).ValueGeneratedOnAdd();
         }
     }
 }

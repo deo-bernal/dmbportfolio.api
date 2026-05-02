@@ -48,5 +48,6 @@ namespace Dmb.Data.Entities
         // Navigation properties
         public UserDetails? UserDetails { get; set; }
         public ICollection<Project> Projects { get; set; } = new List<Project>();
+        public ICollection<PasswordResetToken> PasswordResetTokens { get; set; } = new List<PasswordResetToken>();
     }
 }
