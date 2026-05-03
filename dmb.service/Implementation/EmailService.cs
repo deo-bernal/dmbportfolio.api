@@ -1,61 +1,53 @@
-using System.Net;
-using System.Net.Mail;
+using Dmb.Model.Abstractions;
 using Dmb.Service.Interface;
-using Microsoft.Extensions.Configuration;
+using Dmb.Service.Services;
 
 namespace Dmb.Service.Implementation;
 
-public class EmailService : IEmailService
+public class EmailService : IEmailService, IActivationEmailSender, IPasswordResetEmailSender
 {
-    private readonly IConfiguration _config;
+    private readonly SmtpHtmlEmailService _smtpMail;
+    private readonly EmailTemplateProvider _templates;
 
-    public EmailService(IConfiguration config)
+    public EmailService(SmtpHtmlEmailService smtpMail, EmailTemplateProvider templates)
     {
-        _config = config;
+        _smtpMail = smtpMail;
+        _templates = templates;
     }
 
-    public async Task SendPasswordResetEmailAsync(string toEmail, string resetLink, CancellationToken cancellationToken = default)
+    public async Task SendPasswordResetEmailAsync(
+        string toEmail,
+        string resetLink,
+        CancellationToken cancellationToken = default)
     {
-        var smtpHost = _config["Email:SmtpHost"]
-            ?? throw new InvalidOperationException("Email:SmtpHost is not configured.");
-        var smtpPortRaw = _config["Email:SmtpPort"] ?? "587";
-        if (!int.TryParse(smtpPortRaw, out var smtpPort))
-        {
-            throw new InvalidOperationException("Email:SmtpPort must be a valid integer.");
-        }
+        const string subject = "Password Reset Request";
+        var htmlBody = await _templates.GetPasswordResetHtmlAsync(resetLink, cancellationToken);
+        await _smtpMail.SendAsync(toEmail, subject, htmlBody, cancellationToken);
+    }
 
-        var smtpUser = _config["Email:SmtpUser"]
-            ?? throw new InvalidOperationException("Email:SmtpUser is not configured.");
-        var smtpPass = _config["Email:SmtpPass"]
-            ?? throw new InvalidOperationException("Email:SmtpPass is not configured.");
-        var fromEmail = _config["Email:FromEmail"]
-            ?? throw new InvalidOperationException("Email:FromEmail is not configured.");
+    public async Task SendAccountActivationEmailAsync(
+        string toEmail,
+        string activationLink,
+        CancellationToken cancellationToken = default)
+    {
+        const string subject = "Activate your account";
+        var htmlBody = await _templates.GetAccountActivationHtmlAsync(activationLink, cancellationToken);
+        await _smtpMail.SendAsync(toEmail, subject, htmlBody, cancellationToken);
+    }
 
-        using var client = new SmtpClient(smtpHost, smtpPort)
-        {
-            Credentials = new NetworkCredential(smtpUser, smtpPass),
-            EnableSsl = true
-        };
+    public async Task SendActivationMonitoringEmailAsync(
+        string monitoringEmail,
+        string activatedAccountEmail,
+        CancellationToken cancellationToken = default)
+    {
+        const string subject = "New Account Activated";
+        var htmlBody = $@"
+                <h2>Account activated</h2>
+                <p>A new account has completed activation.</p>
+                <p><strong>Email:</strong> {System.Net.WebUtility.HtmlEncode(activatedAccountEmail)}</p>
+                <p><strong>Activated At (UTC):</strong> {DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss}</p>
+            ";
 
-        using var mail = new MailMessage
-        {
-            From = new MailAddress(fromEmail, "Online Profile"),
-            Subject = "Password Reset Request",
-            Body = $@"
-                <h2>Password Reset</h2>
-                <p>You requested to reset your password.</p>
-                <p>Click the link below to reset it. This link expires in 1 hour.</p>
-                <a href='{resetLink}'
-                   style='background:#007bff;color:white;padding:10px 20px;
-                          text-decoration:none;border-radius:5px;'>
-                   Reset Password
-                </a>
-                <p>If you did not request this, ignore this email.</p>
-            ",
-            IsBodyHtml = true
-        };
-
-        mail.To.Add(toEmail);
-        await client.SendMailAsync(mail, cancellationToken);
+        await _smtpMail.SendAsync(monitoringEmail, subject, htmlBody, cancellationToken);
     }
 }

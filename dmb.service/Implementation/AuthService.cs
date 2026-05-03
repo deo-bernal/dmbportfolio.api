@@ -1,7 +1,6 @@
-using System.Security.Cryptography;
-using System.Text;
 using Dmb.Data.Repository.Interface;
 using Dmb.Model.Dtos;
+using Dmb.Model.Enums;
 using Dmb.Service.Interface;
 
 namespace Dmb.Service.Implementation;
@@ -9,41 +8,55 @@ namespace Dmb.Service.Implementation;
 public class AuthService : IAuthService
 {
     private readonly IAuthRepository _authRepository;
+    private readonly IPasswordResetRepository _passwordResetRepository;
 
-    public AuthService(IAuthRepository authRepository)
+    public AuthService(IAuthRepository authRepository, IPasswordResetRepository passwordResetRepository)
     {
         _authRepository = authRepository;
+        _passwordResetRepository = passwordResetRepository;
     }
 
-    public async Task<LoggedInUserDto?> AuthenticateAsync(string username, string password, CancellationToken cancellationToken = default)
+    public Task<AuthTokenLoginResult> LoginWithJwtAsync(LoginDto model, CancellationToken cancellationToken = default)
     {
-        var user = await _authRepository.GetUserRecordAsync(username, cancellationToken);
-        if (user is null)
-        {
-            return null;
-        }
+        return _authRepository.LoginAndIssueJwtAsync(model, cancellationToken);
+    }
 
-        var isPasswordValid = VerifyPassword(password, user.PasswordSalt, user.PasswordHash);
-        if (!isPasswordValid)
-        {
-            return null;
-        }
+    public Task<LogoutWorkflowResult> LogoutAsync(
+        string? username,
+        string? jti,
+        string? expClaim,
+        CancellationToken cancellationToken = default)
+    {
+        return _authRepository.LogoutAsync(username, jti, expClaim, cancellationToken);
+    }
 
-        return new LoggedInUserDto
-        {
-            UserId = user.UserId,
-            Username = user.Username,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Email = user.Email,
-            Activated = user.Activated,
-            CreatedAt = user.CreatedAt
-        };
+    public Task<ForgotPasswordRequestStatus> RequestPasswordResetAsync(
+        ForgotPasswordDto request,
+        CancellationToken cancellationToken = default)
+    {
+        return _passwordResetRepository.RequestPasswordResetAsync(request, cancellationToken);
+    }
+
+    public Task<PasswordResetCompletionStatus> CompletePasswordResetAsync(
+        ResetPasswordDto request,
+        CancellationToken cancellationToken = default)
+    {
+        return _passwordResetRepository.CompletePasswordResetAsync(request, cancellationToken);
+    }
+
+    public Task<LoginResult> AuthenticateAsync(string username, string password, CancellationToken cancellationToken = default)
+    {
+        return _authRepository.LoginAsync(username, password, cancellationToken);
     }
 
     public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default)
     {
         return _authRepository.UsernameExistsAsync(username, cancellationToken);
+    }
+
+    public Task<bool> EmailAlreadyRegisteredAsync(string email, CancellationToken cancellationToken = default)
+    {
+        return _authRepository.EmailAlreadyRegisteredAsync(email, cancellationToken);
     }
 
     public Task<bool> IsJtiRevokedAsync(string jti, CancellationToken cancellationToken = default)
@@ -56,56 +69,23 @@ public class AuthService : IAuthService
         return _authRepository.RevokeJtiAsync(jti, expiresAt, cancellationToken);
     }
 
-    public async Task<LoggedInUserDto> RegisterAsync(RegisterDto request, CancellationToken cancellationToken = default)
+    public Task<LoggedInUserDto> RegisterAsync(RegisterDto request, CancellationToken cancellationToken = default)
     {
-        var (passwordHash, passwordSalt) = CreatePasswordHash(request.Password);
-
-        var user = await _authRepository.CreateUserAsync(new UserDto
-        {
-            Username = request.Username,
-            PasswordHash = passwordHash,
-            PasswordSalt = passwordSalt,
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-            Email = request.Email,
-            ContactNo = request.ContactNo,
-            Activated = true,
-            CreatedAt = DateTimeOffset.UtcNow
-        }, cancellationToken);
-
-        return new LoggedInUserDto
-        {
-            UserId = user.UserId,
-            Username = user.Username,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Email = user.Email,
-            Activated = user.Activated,
-            CreatedAt = user.CreatedAt
-        };
+        return _authRepository.CreateRegisteredUserAsync(request, cancellationToken);
     }
 
     public (string PasswordHash, string PasswordSalt) CreatePasswordHash(string password)
     {
-        using var hmac = new HMACSHA512();
-        var passwordSalt = Convert.ToBase64String(hmac.Key);
-        var passwordHash = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(password)));
-        return (passwordHash, passwordSalt);
+        return _authRepository.CreatePasswordHash(password);
     }
 
     public string HashPassword(string password, string passwordSalt)
     {
-        var saltBytes = Convert.FromBase64String(passwordSalt);
-        using var hmac = new HMACSHA512(saltBytes);
-        var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
-        return Convert.ToBase64String(hashBytes);
+        return _authRepository.HashPassword(password, passwordSalt);
     }
 
     public bool VerifyPassword(string password, string passwordSalt, string passwordHash)
     {
-        var computedHash = HashPassword(password, passwordSalt);
-        return CryptographicOperations.FixedTimeEquals(
-            Convert.FromBase64String(computedHash),
-            Convert.FromBase64String(passwordHash));
+        return _authRepository.VerifyPassword(password, passwordSalt, passwordHash);
     }
 }

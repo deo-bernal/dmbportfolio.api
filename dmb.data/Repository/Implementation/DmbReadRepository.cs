@@ -2,6 +2,7 @@
 using Dmb.Data.Context;
 using Dmb.Data.Repository.Interface;
 using Dmb.Model.Dtos;
+using Dmb.Model.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace Dmb.Data.Repository.Implementation;
@@ -15,6 +16,24 @@ public class DmbReadRepository : IDmbReadRepository
     {
         _dbContext = dbContext;
         _mapper = mapper;
+    }
+
+    public async Task<MyProfileWorkflowResult> GetMyProfileByNameIdentifierAsync(
+        string? nameIdentifier,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(nameIdentifier) || !int.TryParse(nameIdentifier.Trim(), out var userId))
+        {
+            return new MyProfileWorkflowResult { Status = MyProfileWorkflowStatus.InvalidUserContext };
+        }
+
+        var details = await GetUserCompleteDetailsAsync(userId, cancellationToken);
+        if (details is null)
+        {
+            return new MyProfileWorkflowResult { Status = MyProfileWorkflowStatus.NotFound };
+        }
+
+        return new MyProfileWorkflowResult { Status = MyProfileWorkflowStatus.Ok, Details = details };
     }
 
     public async Task<UserCompleteDetailsDto?> GetUserCompleteDetailsAsync(int userId, CancellationToken cancellationToken = default)

@@ -16,4 +16,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Templates\password-reset.html">
+      <LogicalName>EmailTemplates/password-reset.html</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Templates\account-activation.html">
+      <LogicalName>EmailTemplates/account-activation.html</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

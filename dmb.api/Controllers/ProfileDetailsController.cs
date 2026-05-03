@@ -1,6 +1,7 @@
+using Dmb.Model.Enums;
 using Dmb.Service.Interface;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -21,26 +22,16 @@ public class ProfileDetailsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetMyProfile(CancellationToken cancellationToken)
     {
-        try
-        {
-            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(userIdValue, out var userId))
-            {
-                return Unauthorized(new { message = "Invalid user context." });
-            }
+        var outcome = await _dmbReadService.GetMyProfileAsync(
+            User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
+            cancellationToken);
 
-            var userCompleteDetails = await _dmbReadService.GetUserCompleteDetailsAsync(userId, cancellationToken);
-            if (userCompleteDetails is null)
-            {
-                return NotFound(new { message = "User profile not found." });
-            }
-
-            return Ok(userCompleteDetails);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        return outcome.Status switch
         {
-            // Request was canceled by the caller/client. Return a non-error response.
-            return new EmptyResult();
-        }
+            MyProfileWorkflowStatus.InvalidUserContext => Unauthorized(new { message = "Invalid user context." }),
+            MyProfileWorkflowStatus.NotFound => NotFound(new { message = "User profile not found." }),
+            MyProfileWorkflowStatus.Canceled => new EmptyResult(),
+            _ => Ok(outcome.Details)
+        };
     }
 }

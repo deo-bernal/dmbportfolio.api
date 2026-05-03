@@ -49,5 +49,6 @@ namespace Dmb.Data.Entities
         public UserDetails? UserDetails { get; set; }
         public ICollection<Project> Projects { get; set; } = new List<Project>();
         public ICollection<PasswordResetToken> PasswordResetTokens { get; set; } = new List<PasswordResetToken>();
+        public ICollection<AccountActivationToken> AccountActivationTokens { get; set; } = new List<AccountActivationToken>();
     }
 }

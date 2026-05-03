@@ -4,6 +4,8 @@ namespace Dmb.Service.Interface;
 
 public interface IDmbReadService
 {
+    Task<MyProfileWorkflowResult> GetMyProfileAsync(string? nameIdentifierClaim, CancellationToken cancellationToken = default);
+
     Task<UserCompleteDetailsDto?> GetUserCompleteDetailsAsync(int userId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<UserCompleteDetailsDto>> GetUsersCompleteDetailsAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default);

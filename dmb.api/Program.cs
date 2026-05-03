@@ -9,8 +9,11 @@ using Dmb.Data.Context;
 using Dmb.Data.Mapper;
 using Dmb.Data.Repository.Implementation;
 using Dmb.Data.Repository.Interface;
+using Dmb.Model.Abstractions;
 using Dmb.Service.Implementation;
 using Dmb.Service.Interface;
+using Dmb.Service.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Microsoft.Extensions.Caching.Memory;
 using System.IdentityModel.Tokens.Jwt;
@@ -125,9 +128,17 @@ var mapperConfiguration = new MapperConfiguration(configuration =>
 
 builder.Services.AddSingleton<IMapper>(mapperConfiguration.CreateMapper());
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IPasswordResetRepository, PasswordResetRepository>();
+builder.Services.AddScoped<IRegistrationRepository, RegistrationRepository>();
 builder.Services.AddScoped<IDmbReadRepository, DmbReadRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddSingleton<EmailTemplateProvider>();
+builder.Services.AddScoped<SmtpHtmlEmailService>();
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<IEmailService>(sp => sp.GetRequiredService<EmailService>());
+builder.Services.AddScoped<IActivationEmailSender>(sp => sp.GetRequiredService<EmailService>());
+builder.Services.AddScoped<IPasswordResetEmailSender>(sp => sp.GetRequiredService<EmailService>());
+builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IDmbReadService, DmbReadService>();
 
 var app = builder.Build();

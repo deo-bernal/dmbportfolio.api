@@ -1,5 +1,6 @@
 using Dmb.Data.Repository.Interface;
 using Dmb.Model.Dtos;
+using Dmb.Model.Enums;
 using Dmb.Service.Interface;
 
 namespace Dmb.Service.Implementation;
@@ -11,6 +12,20 @@ public class DmbReadService : IDmbReadService
     public DmbReadService(IDmbReadRepository dmbReadRepository)
     {
         _dmbReadRepository = dmbReadRepository;
+    }
+
+    public async Task<MyProfileWorkflowResult> GetMyProfileAsync(
+        string? nameIdentifierClaim,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _dmbReadRepository.GetMyProfileByNameIdentifierAsync(nameIdentifierClaim, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return new MyProfileWorkflowResult { Status = MyProfileWorkflowStatus.Canceled };
+        }
     }
 
     public async Task<UserCompleteDetailsDto?> GetUserCompleteDetailsAsync(int userId, CancellationToken cancellationToken = default)

@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\dmb.data\dmb.data.csproj" />
+    <ProjectReference Include="..\dmb.model\dmb.model.csproj" />
     <ProjectReference Include="..\dmb.service\dmb.service.csproj" />
   </ItemGroup>
 
