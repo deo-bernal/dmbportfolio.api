@@ -134,6 +134,7 @@ builder.Services.AddScoped<IDmbReadRepository, DmbReadRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<EmailTemplateProvider>();
 builder.Services.AddScoped<SmtpHtmlEmailService>();
+builder.Services.AddHttpClient<ResendHttpEmailService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IEmailService>(sp => sp.GetRequiredService<EmailService>());
 builder.Services.AddScoped<IActivationEmailSender>(sp => sp.GetRequiredService<EmailService>());
