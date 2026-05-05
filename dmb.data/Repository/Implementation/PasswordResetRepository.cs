@@ -7,6 +7,7 @@ using Dmb.Model.Dtos;
 using Dmb.Model.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Dmb.Data.Repository.Implementation;
 
@@ -16,17 +17,20 @@ public class PasswordResetRepository : IPasswordResetRepository
     private readonly IAuthRepository _authRepository;
     private readonly IConfiguration _configuration;
     private readonly IPasswordResetEmailSender _passwordResetEmailSender;
+    private readonly ILogger<PasswordResetRepository> _logger;
 
     public PasswordResetRepository(
         DmbDbContext dbContext,
         IAuthRepository authRepository,
         IConfiguration configuration,
-        IPasswordResetEmailSender passwordResetEmailSender)
+        IPasswordResetEmailSender passwordResetEmailSender,
+        ILogger<PasswordResetRepository> logger)
     {
         _dbContext = dbContext;
         _authRepository = authRepository;
         _configuration = configuration;
         _passwordResetEmailSender = passwordResetEmailSender;
+        _logger = logger;
     }
 
     public async Task<ForgotPasswordRequestStatus> RequestPasswordResetAsync(
@@ -74,8 +78,9 @@ public class PasswordResetRepository : IPasswordResetRepository
         {
             await _passwordResetEmailSender.SendPasswordResetEmailAsync(user.Email, resetLink, cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to send password reset email to {Email}.", user.Email);
             _dbContext.PasswordResetTokens.Remove(resetToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
             return ForgotPasswordRequestStatus.EmailServiceUnavailable;

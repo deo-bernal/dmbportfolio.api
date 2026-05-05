@@ -7,6 +7,7 @@ using Dmb.Model.Dtos;
 using Dmb.Model.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Dmb.Data.Repository.Implementation;
 
@@ -18,17 +19,20 @@ public class RegistrationRepository : IRegistrationRepository
     private readonly IAuthRepository _authRepository;
     private readonly IConfiguration _configuration;
     private readonly IActivationEmailSender _activationEmailSender;
+    private readonly ILogger<RegistrationRepository> _logger;
 
     public RegistrationRepository(
         DmbDbContext dbContext,
         IAuthRepository authRepository,
         IConfiguration configuration,
-        IActivationEmailSender activationEmailSender)
+        IActivationEmailSender activationEmailSender,
+        ILogger<RegistrationRepository> logger)
     {
         _dbContext = dbContext;
         _authRepository = authRepository;
         _configuration = configuration;
         _activationEmailSender = activationEmailSender;
+        _logger = logger;
     }
 
     public async Task<RegisterWithActivationOutcome> RegisterWithActivationAsync(
@@ -54,8 +58,9 @@ public class RegistrationRepository : IRegistrationRepository
         {
             await _activationEmailSender.SendAccountActivationEmailAsync(email, activationLink, cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to send account activation email to {Email}.", email);
             await RemoveAccountActivationTokenAndUserAsync(begin.UserId, begin.Token, cancellationToken);
             return RegisterWithActivationOutcome.ActivationEmailSendFailed;
         }
@@ -100,8 +105,12 @@ public class RegistrationRepository : IRegistrationRepository
                     activatedAccountEmail,
                     cancellationToken);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogWarning(
+                    ex,
+                    "Activation succeeded but monitoring email failed for activated account {ActivatedAccountEmail}.",
+                    activatedAccountEmail);
                 // Activation already succeeded. Do not fail user flow because monitoring email failed.
             }
         }
