@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Dmb.Service.Services;
 
@@ -12,10 +13,14 @@ public sealed class SmtpHtmlEmailService
     private const string FromDisplayName = "Online Profile";
 
     private readonly IConfiguration _configuration;
+    private readonly ILogger<SmtpHtmlEmailService> _logger;
 
-    public SmtpHtmlEmailService(IConfiguration configuration)
+    public SmtpHtmlEmailService(
+        IConfiguration configuration,
+        ILogger<SmtpHtmlEmailService> logger)
     {
         _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task SendAsync(
@@ -43,7 +48,21 @@ public sealed class SmtpHtmlEmailService
         };
 
         mail.To.Add(toEmail);
-        await client.SendMailAsync(mail, cancellationToken);
+        try
+        {
+            await client.SendMailAsync(mail, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "SMTP send failed. Host: {Host}, Port: {Port}, To: {ToEmail}, Subject: {Subject}",
+                settings.Host,
+                settings.Port,
+                toEmail,
+                subject);
+            throw;
+        }
     }
 
     private static SmtpSettings ReadSmtpSettings(IConfiguration configuration)
