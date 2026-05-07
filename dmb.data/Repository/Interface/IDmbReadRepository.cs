@@ -1,4 +1,5 @@
 using Dmb.Model.Dtos;
+using Dmb.Model.Enums;
 
 namespace Dmb.Data.Repository.Interface;
 
@@ -11,4 +12,6 @@ public interface IDmbReadRepository
     Task<IReadOnlyList<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<UserDetailsDto>> GetUserDetailsAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ProjectDto>> GetProjectsAsync(CancellationToken cancellationToken = default);
+    Task<CreateMyProfileStatus> CreateMyProfileAsync(int userId, UpdateMyProfileDto request, CancellationToken cancellationToken = default);
+    Task<bool> UpdateMyProfileAsync(int userId, UpdateMyProfileDto request, CancellationToken cancellationToken = default);
 }

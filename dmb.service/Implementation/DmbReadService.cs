@@ -52,4 +52,14 @@ public class DmbReadService : IDmbReadService
     {
         return _dmbReadRepository.GetProjectsAsync(cancellationToken);
     }
+
+    public Task<CreateMyProfileStatus> CreateMyProfileAsync(int userId, UpdateMyProfileDto request, CancellationToken cancellationToken = default)
+    {
+        return _dmbReadRepository.CreateMyProfileAsync(userId, request, cancellationToken);
+    }
+
+    public Task<bool> UpdateMyProfileAsync(int userId, UpdateMyProfileDto request, CancellationToken cancellationToken = default)
+    {
+        return _dmbReadRepository.UpdateMyProfileAsync(userId, request, cancellationToken);
+    }
 }
