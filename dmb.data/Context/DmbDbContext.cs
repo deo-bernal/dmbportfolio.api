@@ -12,6 +12,7 @@ namespace Dmb.Data.Context
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<UserDetails> UserDetails { get; set; } = null!;
         public DbSet<Project> Projects { get; set; } = null!;
+        public DbSet<ProjectType> ProjectTypes { get; set; } = null!;
         public DbSet<RevokedToken> RevokedTokens { get; set; } = null!;
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
         public DbSet<AccountActivationToken> AccountActivationTokens { get; set; } = null!;
@@ -37,13 +38,22 @@ namespace Dmb.Data.Context
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Project: many-to-one with User, unique constraint on (UserId, Name, Type)
+            modelBuilder.Entity<ProjectType>(entity =>
+            {
+                entity.HasIndex(pt => pt.TypeName).IsUnique();
+            });
+
+            // Project: many-to-one with User, many-to-one with ProjectType
             modelBuilder.Entity<Project>(entity =>
             {
-                entity.HasIndex(p => new { p.UserId, p.Name, p.Type }).IsUnique().HasDatabaseName("UQ_Project_User_Name_Type");
+                entity.HasIndex(p => new { p.UserId, p.Name, p.ProjectTypeId }).IsUnique().HasDatabaseName("UQ_Project_User_Name_ProjectType");
                 entity.HasOne(p => p.User)
                       .WithMany(u => u.Projects)
                       .HasForeignKey(p => p.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(p => p.ProjectType)
+                      .WithMany(pt => pt.Projects)
+                      .HasForeignKey(p => p.ProjectTypeId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
@@ -76,6 +86,7 @@ namespace Dmb.Data.Context
             modelBuilder.Entity<User>().Property(u => u.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<UserDetails>().Property(ud => ud.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<Project>().Property(p => p.CreatedAt).ValueGeneratedOnAdd();
+            modelBuilder.Entity<ProjectType>().Property(pt => pt.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<RevokedToken>().Property(token => token.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<PasswordResetToken>().Property(t => t.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<AccountActivationToken>().Property(t => t.CreatedAt).ValueGeneratedOnAdd();

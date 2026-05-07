@@ -14,6 +14,8 @@ public class DmbDetailsMapperProfile : Profile
         CreateMap<UserDetails, UserDetailsDto>()
             .ForMember(destination => destination.User, options => options.Ignore());
 
+        CreateMap<ProjectType, ProjectTypeDto>();
+
         CreateMap<Project, ProjectDto>()
             .ForMember(destination => destination.User, options => options.Ignore());
     }

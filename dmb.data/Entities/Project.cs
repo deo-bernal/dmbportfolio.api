@@ -18,8 +18,7 @@ namespace Dmb.Data.Entities
         public string Name { get; set; } = null!;
 
         [Required]
-        [MaxLength(100)]
-        public string Type { get; set; } = null!;
+        public int ProjectTypeId { get; set; }
 
         public string? ProjectDetails { get; set; }
 
@@ -28,5 +27,8 @@ namespace Dmb.Data.Entities
         // Navigation property
         [ForeignKey(nameof(UserId))]
         public User? User { get; set; }
+
+        [ForeignKey(nameof(ProjectTypeId))]
+        public ProjectType? ProjectType { get; set; }
     }
 }

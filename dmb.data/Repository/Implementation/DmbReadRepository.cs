@@ -42,6 +42,7 @@ public class DmbReadRepository : IDmbReadRepository
             .AsNoTracking()
             .Include(u => u.UserDetails)
             .Include(u => u.Projects)
+            .ThenInclude(p => p.ProjectType)
             .FirstOrDefaultAsync(u => u.UserId == userId && u.Activated, cancellationToken);
 
         return user is null ? null : _mapper.Map<UserCompleteDetailsDto>(user);
@@ -53,6 +54,7 @@ public class DmbReadRepository : IDmbReadRepository
             .AsNoTracking()
             .Include(u => u.UserDetails)
             .Include(u => u.Projects)
+            .ThenInclude(p => p.ProjectType)
             .ToListAsync(cancellationToken);
 
         return _mapper.Map<IReadOnlyList<UserCompleteDetailsDto>>(users);
@@ -64,6 +66,7 @@ public class DmbReadRepository : IDmbReadRepository
             .AsNoTracking()
             .Include(u => u.UserDetails)
             .Include(u => u.Projects)
+            .ThenInclude(p => p.ProjectType)
             .ToListAsync(cancellationToken);
 
         return _mapper.Map<IReadOnlyList<UserDto>>(users);
@@ -82,6 +85,7 @@ public class DmbReadRepository : IDmbReadRepository
     {
         var projects = await _dbContext.Projects
             .AsNoTracking()
+            .Include(p => p.ProjectType)
             .ToListAsync(cancellationToken);
 
         return _mapper.Map<IReadOnlyList<ProjectDto>>(projects);
