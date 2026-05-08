@@ -4,6 +4,7 @@ public enum RegisterWithActivationOutcome
 {
     Success,
     DuplicateEmail,
+    DuplicateUsernameFirstLast,
     ActivationEmailSendFailed
 }
 

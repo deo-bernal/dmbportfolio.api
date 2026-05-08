@@ -30,8 +30,10 @@ CREATE TABLE "User"
     "Email"       VARCHAR(255) NOT NULL UNIQUE,
     "ContactNo"   VARCHAR(30),
     "Activated"   BOOLEAN NOT NULL DEFAULT TRUE,
+    "IsViewable"  BOOLEAN NOT NULL DEFAULT FALSE,
     "CreatedAt"   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE UNIQUE INDEX "UX_User_Username_FirstName_LastName" ON "User" ("Username", "FirstName", "LastName");
 
 CREATE TABLE "PasswordResetToken"
 (
@@ -79,6 +81,11 @@ CREATE TABLE IF NOT EXISTS "AccountActivationToken"
         ON DELETE CASCADE
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "UX_AccountActivationToken_Token" ON "AccountActivationToken" ("Token");
+
+-- 8.1) Incremental: add visibility + uniqueness constraints on existing User table
+ALTER TABLE "User"
+    ADD COLUMN IF NOT EXISTS "IsViewable" BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE UNIQUE INDEX IF NOT EXISTS "UX_User_Username_FirstName_LastName" ON "User" ("Username", "FirstName", "LastName");
 
 -- 9) Incremental migration: normalize Project.Type into ProjectType table
 CREATE TABLE IF NOT EXISTS "ProjectType"
@@ -180,9 +187,9 @@ ALTER TABLE "Project"
 
 -- 3) Seed Users (based on ProfileController response)
 -- Actual password for the seeded user: Password@123
-INSERT INTO "User" ("Username", "PasswordHash", "PasswordSalt", "FirstName", "LastName", "Email", "ContactNo", "Activated", "CreatedAt")
+INSERT INTO "User" ("Username", "PasswordHash", "PasswordSalt", "FirstName", "LastName", "Email", "ContactNo", "Activated", "IsViewable", "CreatedAt")
 VALUES
-('deobernal@gmail.com', 'vHgVB+7WP1+kaDN0PgGjr0p+sqtr1avXf+WGkpRlYb6eI6PdvsU/BuNMyus+sJX2PN3XWOAq67s4HaCs9N1f4w==', 'nL3mQ8vX1pR7kD5sT2wB9A==', 'Deo', 'Bernal', 'deobernal@gmail.com', '+63 925 455 6063', TRUE, NOW())
+('deobernal@gmail.com', 'vHgVB+7WP1+kaDN0PgGjr0p+sqtr1avXf+WGkpRlYb6eI6PdvsU/BuNMyus+sJX2PN3XWOAq67s4HaCs9N1f4w==', 'nL3mQ8vX1pR7kD5sT2wB9A==', 'Deo', 'Bernal', 'deobernal@gmail.com', '+63 925 455 6063', TRUE, TRUE, NOW())
 ON CONFLICT ("Username") DO UPDATE
 SET
     "PasswordHash" = EXCLUDED."PasswordHash",
@@ -192,6 +199,7 @@ SET
     "Email"     = EXCLUDED."Email",
     "ContactNo" = EXCLUDED."ContactNo",
     "Activated" = EXCLUDED."Activated",
+    "IsViewable" = EXCLUDED."IsViewable",
     "CreatedAt" = EXCLUDED."CreatedAt";
 
 -- 4) Seed UserDetails (portfolio summary + skills + video)

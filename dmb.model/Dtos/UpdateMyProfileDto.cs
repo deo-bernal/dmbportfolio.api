@@ -4,6 +4,7 @@ public class UpdateMyProfileDto
 {
     public string? Summary { get; set; }
     public string? Video { get; set; }
+    public bool IsViewable { get; set; }
     public List<string> Skills { get; set; } = [];
     public UpdateMyProfileContactDto Contact { get; set; } = new();
     public List<UpdateMyProfileProjectCategoryDto> ProjectCategories { get; set; } = [];

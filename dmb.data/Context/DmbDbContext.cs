@@ -26,6 +26,9 @@ namespace Dmb.Data.Context
             {
                 entity.HasIndex(u => u.Username).IsUnique();
                 entity.HasIndex(u => u.Email).IsUnique();
+                entity.HasIndex(u => new { u.Username, u.FirstName, u.LastName })
+                    .IsUnique()
+                    .HasDatabaseName("UX_User_Username_FirstName_LastName");
             });
 
             // UserDetails: one-to-one with User, unique UserId

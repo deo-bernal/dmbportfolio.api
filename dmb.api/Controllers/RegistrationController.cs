@@ -24,6 +24,7 @@ public class RegistrationController : ControllerBase
         return outcome switch
         {
             RegisterWithActivationOutcome.DuplicateEmail => BadRequest(new { message = "An account with this email already exists." }),
+            RegisterWithActivationOutcome.DuplicateUsernameFirstLast => BadRequest(new { message = "A user with the same username, first name, and last name already exists." }),
             RegisterWithActivationOutcome.ActivationEmailSendFailed => StatusCode(StatusCodes.Status503ServiceUnavailable,
                 new { message = "Unable to send the activation email. Please try again later." }),
             _ => Ok(new { message = "Registration successful. Check your email to activate your account." })

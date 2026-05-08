@@ -9,6 +9,7 @@ namespace Dmb.Data.Entities
     [Table("User")]
     [Index(nameof(Username), IsUnique = true)]
     [Index(nameof(Email), IsUnique = true)]
+[Index(nameof(Username), nameof(FirstName), nameof(LastName), IsUnique = true, Name = "UX_User_Username_FirstName_LastName")]
     public class User
     {
         [Key]
@@ -42,6 +43,7 @@ namespace Dmb.Data.Entities
         public string? ContactNo { get; set; }
 
         public bool Activated { get; set; }
+        public bool IsViewable { get; set; }
 
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 

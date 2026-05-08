@@ -232,6 +232,26 @@ public class AuthRepository : IAuthRepository
             .AnyAsync(x => x.Email.ToLower() == e || x.Username.ToLower() == e, cancellationToken);
     }
 
+    public Task<bool> UsernameFirstLastExistsAsync(
+        string username,
+        string firstName,
+        string lastName,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedUsername = username.Trim().ToLowerInvariant();
+        var normalizedFirstName = firstName.Trim().ToLowerInvariant();
+        var normalizedLastName = lastName.Trim().ToLowerInvariant();
+
+        return _dbContext.Users
+            .AsNoTracking()
+            .AnyAsync(
+                x =>
+                    x.Username.ToLower() == normalizedUsername &&
+                    x.FirstName.ToLower() == normalizedFirstName &&
+                    x.LastName.ToLower() == normalizedLastName,
+                cancellationToken);
+    }
+
     public async Task<UserDto> CreateUserAsync(UserDto user, CancellationToken cancellationToken = default)
     {
         var entity = new User
@@ -244,6 +264,7 @@ public class AuthRepository : IAuthRepository
             Email = user.Email,
             ContactNo = user.ContactNo,
             Activated = user.Activated,
+            IsViewable = user.IsViewable,
             CreatedAt = user.CreatedAt
         };
 

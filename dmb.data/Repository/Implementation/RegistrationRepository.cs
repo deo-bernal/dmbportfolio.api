@@ -44,6 +44,10 @@ public class RegistrationRepository : IRegistrationRepository
         {
             return RegisterWithActivationOutcome.DuplicateEmail;
         }
+        if (begin.Status == RegistrationBeginStatus.DuplicateUsernameFirstLast)
+        {
+            return RegisterWithActivationOutcome.DuplicateUsernameFirstLast;
+        }
 
         var email = request.Email.Trim().ToLowerInvariant();
         var frontendUrl = (_configuration["App:FrontendUrl"] ?? string.Empty).TrimEnd('/');
@@ -126,6 +130,10 @@ public class RegistrationRepository : IRegistrationRepository
         if (await _authRepository.EmailAlreadyRegisteredAsync(email, cancellationToken))
         {
             return new RegistrationBeginResult { Status = RegistrationBeginStatus.DuplicateEmail };
+        }
+        if (await _authRepository.UsernameFirstLastExistsAsync(email, request.FirstName, request.LastName, cancellationToken))
+        {
+            return new RegistrationBeginResult { Status = RegistrationBeginStatus.DuplicateUsernameFirstLast };
         }
 
         var user = await _authRepository.CreateRegisteredUserAsync(request, cancellationToken);

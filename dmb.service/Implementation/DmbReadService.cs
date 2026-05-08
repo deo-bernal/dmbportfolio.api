@@ -28,6 +28,11 @@ public class DmbReadService : IDmbReadService
         }
     }
 
+    public Task<UserCompleteDetailsDto?> GetPublicProfileAsync(string? username, CancellationToken cancellationToken = default)
+    {
+        return _dmbReadRepository.GetPublicProfileAsync(username, cancellationToken);
+    }
+
     public async Task<UserCompleteDetailsDto?> GetUserCompleteDetailsAsync(int userId, CancellationToken cancellationToken = default)
     {
         return await _dmbReadRepository.GetUserCompleteDetailsAsync(userId, cancellationToken);

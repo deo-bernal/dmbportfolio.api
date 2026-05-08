@@ -11,6 +11,7 @@ public interface IAuthRepository
     Task<LoginResult> LoginAsync(string username, string password, CancellationToken cancellationToken = default);
     Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default);
     Task<bool> EmailAlreadyRegisteredAsync(string email, CancellationToken cancellationToken = default);
+    Task<bool> UsernameFirstLastExistsAsync(string username, string firstName, string lastName, CancellationToken cancellationToken = default);
     Task<UserDto> CreateUserAsync(UserDto user, CancellationToken cancellationToken = default);
     Task<LoggedInUserDto> CreateRegisteredUserAsync(RegisterDto request, CancellationToken cancellationToken = default);
     Task<bool> IsJtiRevokedAsync(string jti, CancellationToken cancellationToken = default);

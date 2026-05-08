@@ -9,6 +9,7 @@ public class UserCompleteDetailsDto
     public string Email { get; set; } = null!;
     public string? ContactNo { get; set; }
     public bool Activated { get; set; }
+    public bool IsViewable { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public UserDetailsDto? UserDetails { get; set; }
     public ICollection<ProjectDto> Projects { get; set; } = new List<ProjectDto>();

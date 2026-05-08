@@ -14,6 +14,7 @@ public interface IAuthService
     Task<LoginResult> AuthenticateAsync(string username, string password, CancellationToken cancellationToken = default);
     Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default);
     Task<bool> EmailAlreadyRegisteredAsync(string email, CancellationToken cancellationToken = default);
+    Task<bool> UsernameFirstLastExistsAsync(string username, string firstName, string lastName, CancellationToken cancellationToken = default);
     Task<LoggedInUserDto> RegisterAsync(RegisterDto request, CancellationToken cancellationToken = default);
     Task<bool> IsJtiRevokedAsync(string jti, CancellationToken cancellationToken = default);
     Task RevokeJtiAsync(string jti, DateTimeOffset expiresAt, CancellationToken cancellationToken = default);

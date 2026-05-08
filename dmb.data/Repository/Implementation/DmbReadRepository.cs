@@ -37,6 +37,28 @@ public class DmbReadRepository : IDmbReadRepository
         return new MyProfileWorkflowResult { Status = MyProfileWorkflowStatus.Ok, Details = details };
     }
 
+    public async Task<UserCompleteDetailsDto?> GetPublicProfileAsync(string? username, CancellationToken cancellationToken = default)
+    {
+        var users = _dbContext.Users
+            .AsNoTracking()
+            .Include(u => u.UserDetails)
+            .Include(u => u.Projects)
+            .ThenInclude(p => p.ProjectType)
+            .Where(u => u.Activated && u.IsViewable);
+
+        if (!string.IsNullOrWhiteSpace(username))
+        {
+            var normalized = username.Trim().ToLowerInvariant();
+            users = users.Where(u => u.Username.ToLower() == normalized);
+        }
+
+        var user = await users
+            .OrderByDescending(u => u.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return user is null ? null : _mapper.Map<UserCompleteDetailsDto>(user);
+    }
+
     public async Task<UserCompleteDetailsDto?> GetUserCompleteDetailsAsync(int userId, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users
@@ -139,6 +161,7 @@ public class DmbReadRepository : IDmbReadRepository
         }
 
         user.ContactNo = request.Contact.Phone?.Trim();
+        user.IsViewable = request.IsViewable;
 
         if (user.UserDetails is null)
         {

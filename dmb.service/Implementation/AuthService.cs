@@ -59,6 +59,15 @@ public class AuthService : IAuthService
         return _authRepository.EmailAlreadyRegisteredAsync(email, cancellationToken);
     }
 
+    public Task<bool> UsernameFirstLastExistsAsync(
+        string username,
+        string firstName,
+        string lastName,
+        CancellationToken cancellationToken = default)
+    {
+        return _authRepository.UsernameFirstLastExistsAsync(username, firstName, lastName, cancellationToken);
+    }
+
     public Task<bool> IsJtiRevokedAsync(string jti, CancellationToken cancellationToken = default)
     {
         return _authRepository.IsJtiRevokedAsync(jti, cancellationToken);
