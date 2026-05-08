@@ -13,6 +13,8 @@ public interface IDmbReadService
     Task<IReadOnlyList<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<UserDetailsDto>> GetUserDetailsAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ProjectDto>> GetProjectsAsync(CancellationToken cancellationToken = default);
+    Task<ResumeDto?> GetMyResumeAsync(int userId, CancellationToken cancellationToken = default);
+    Task<bool> UpsertMyResumeAsync(int userId, UpdateResumeDto request, CancellationToken cancellationToken = default);
     Task<CreateMyProfileStatus> CreateMyProfileAsync(int userId, UpdateMyProfileDto request, CancellationToken cancellationToken = default);
     Task<bool> UpdateMyProfileAsync(int userId, UpdateMyProfileDto request, CancellationToken cancellationToken = default);
 }

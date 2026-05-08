@@ -114,6 +114,134 @@ public class DmbReadRepository : IDmbReadRepository
         return _mapper.Map<IReadOnlyList<ProjectDto>>(projects);
     }
 
+    public async Task<ResumeDto?> GetMyResumeAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users
+            .AsNoTracking()
+            .Include(u => u.UserDetails)
+            .Include(u => u.WorkHistories)
+            .Include(u => u.Educations)
+            .FirstOrDefaultAsync(u => u.UserId == userId && u.Activated, cancellationToken);
+
+        if (user is null)
+        {
+            return null;
+        }
+
+        return new ResumeDto
+        {
+            PersonalInfo = new ResumePersonalInfoDto
+            {
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                ContactNo = user.ContactNo,
+                Address = user.Address,
+                Summary = user.UserDetails?.Description
+            },
+            WorkHistory = user.WorkHistories
+                .OrderByDescending(x => x.FromDate ?? DateTime.MinValue)
+                .ThenByDescending(x => x.WorkHistoryId)
+                .Select(x => new ResumeWorkHistoryDto
+                {
+                    WorkHistoryId = x.WorkHistoryId,
+                    Company = x.Company,
+                    Position = x.Position,
+                    FromDate = x.FromDate,
+                    ToDate = x.ToDate,
+                    JobDescription = x.JobDescription
+                })
+                .ToList(),
+            Education = user.Educations
+                .OrderByDescending(x => x.StartDate ?? DateTime.MinValue)
+                .ThenByDescending(x => x.EducationId)
+                .Select(x => new ResumeEducationDto
+                {
+                    EducationId = x.EducationId,
+                    School = x.School,
+                    Address = x.Address,
+                    CourseTaken = x.CourseTaken,
+                    StartDate = x.StartDate,
+                    EndDate = x.EndDate
+                })
+                .ToList()
+        };
+    }
+
+    public async Task<bool> UpsertMyResumeAsync(int userId, UpdateResumeDto request, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users
+            .Include(u => u.UserDetails)
+            .Include(u => u.WorkHistories)
+            .Include(u => u.Educations)
+            .FirstOrDefaultAsync(u => u.UserId == userId && u.Activated, cancellationToken);
+
+        if (user is null)
+        {
+            return false;
+        }
+
+        user.FirstName = request.PersonalInfo.FirstName.Trim();
+        user.LastName = request.PersonalInfo.LastName.Trim();
+        user.Email = request.PersonalInfo.Email.Trim();
+        user.ContactNo = request.PersonalInfo.ContactNo?.Trim();
+        user.Address = request.PersonalInfo.Address?.Trim();
+
+        if (user.UserDetails is null)
+        {
+            user.UserDetails = new UserDetails
+            {
+                UserId = user.UserId,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+        }
+        user.UserDetails.Description = request.PersonalInfo.Summary?.Trim();
+
+        _dbContext.WorkHistories.RemoveRange(user.WorkHistories);
+        _dbContext.Educations.RemoveRange(user.Educations);
+
+        var workHistories = request.WorkHistory
+            .Where(x => !string.IsNullOrWhiteSpace(x.Company) && !string.IsNullOrWhiteSpace(x.Position))
+            .Select(x => new WorkHistory
+            {
+                UserId = user.UserId,
+                Company = x.Company.Trim(),
+                Position = x.Position.Trim(),
+                FromDate = x.FromDate,
+                ToDate = x.ToDate,
+                JobDescription = x.JobDescription?.Trim(),
+                CreatedAt = DateTimeOffset.UtcNow
+            })
+            .ToList();
+
+        var educationItems = request.Education
+            .Where(x => !string.IsNullOrWhiteSpace(x.School))
+            .Select(x => new Education
+            {
+                UserId = user.UserId,
+                School = x.School.Trim(),
+                Address = x.Address?.Trim(),
+                CourseTaken = x.CourseTaken?.Trim(),
+                StartDate = x.StartDate,
+                EndDate = x.EndDate,
+                CreatedAt = DateTimeOffset.UtcNow
+            })
+            .ToList();
+
+        if (workHistories.Count > 0)
+        {
+            await _dbContext.WorkHistories.AddRangeAsync(workHistories, cancellationToken);
+        }
+
+        if (educationItems.Count > 0)
+        {
+            await _dbContext.Educations.AddRangeAsync(educationItems, cancellationToken);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     public async Task<CreateMyProfileStatus> CreateMyProfileAsync(int userId, UpdateMyProfileDto request, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users

@@ -39,6 +39,9 @@ namespace Dmb.Data.Entities
         [MaxLength(255)]
         public string Email { get; set; } = null!;
 
+        [MaxLength(255)]
+        public string? Address { get; set; }
+
         [MaxLength(30)]
         public string? ContactNo { get; set; }
 
@@ -50,6 +53,8 @@ namespace Dmb.Data.Entities
         // Navigation properties
         public UserDetails? UserDetails { get; set; }
         public ICollection<Project> Projects { get; set; } = new List<Project>();
+        public ICollection<WorkHistory> WorkHistories { get; set; } = new List<WorkHistory>();
+        public ICollection<Education> Educations { get; set; } = new List<Education>();
         public ICollection<PasswordResetToken> PasswordResetTokens { get; set; } = new List<PasswordResetToken>();
         public ICollection<AccountActivationToken> AccountActivationTokens { get; set; } = new List<AccountActivationToken>();
     }

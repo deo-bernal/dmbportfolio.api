@@ -12,6 +12,8 @@ namespace Dmb.Data.Context
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<UserDetails> UserDetails { get; set; } = null!;
         public DbSet<Project> Projects { get; set; } = null!;
+        public DbSet<WorkHistory> WorkHistories { get; set; } = null!;
+        public DbSet<Education> Educations { get; set; } = null!;
         public DbSet<ProjectType> ProjectTypes { get; set; } = null!;
         public DbSet<RevokedToken> RevokedTokens { get; set; } = null!;
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
@@ -60,6 +62,22 @@ namespace Dmb.Data.Context
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
+            modelBuilder.Entity<WorkHistory>(entity =>
+            {
+                entity.HasOne(w => w.User)
+                    .WithMany(u => u.WorkHistories)
+                    .HasForeignKey(w => w.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Education>(entity =>
+            {
+                entity.HasOne(e => e.User)
+                    .WithMany(u => u.Educations)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
             modelBuilder.Entity<RevokedToken>(entity =>
             {
                 entity.HasIndex(token => token.Jti).IsUnique();
@@ -89,6 +107,8 @@ namespace Dmb.Data.Context
             modelBuilder.Entity<User>().Property(u => u.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<UserDetails>().Property(ud => ud.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<Project>().Property(p => p.CreatedAt).ValueGeneratedOnAdd();
+            modelBuilder.Entity<WorkHistory>().Property(w => w.CreatedAt).ValueGeneratedOnAdd();
+            modelBuilder.Entity<Education>().Property(e => e.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<ProjectType>().Property(pt => pt.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<RevokedToken>().Property(token => token.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<PasswordResetToken>().Property(t => t.CreatedAt).ValueGeneratedOnAdd();

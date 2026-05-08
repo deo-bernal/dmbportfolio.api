@@ -58,6 +58,16 @@ public class DmbReadService : IDmbReadService
         return _dmbReadRepository.GetProjectsAsync(cancellationToken);
     }
 
+    public Task<ResumeDto?> GetMyResumeAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return _dmbReadRepository.GetMyResumeAsync(userId, cancellationToken);
+    }
+
+    public Task<bool> UpsertMyResumeAsync(int userId, UpdateResumeDto request, CancellationToken cancellationToken = default)
+    {
+        return _dmbReadRepository.UpsertMyResumeAsync(userId, request, cancellationToken);
+    }
+
     public Task<CreateMyProfileStatus> CreateMyProfileAsync(int userId, UpdateMyProfileDto request, CancellationToken cancellationToken = default)
     {
         return _dmbReadRepository.CreateMyProfileAsync(userId, request, cancellationToken);
