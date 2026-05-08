@@ -7,6 +7,7 @@ public interface IDmbReadRepository
 {
     Task<MyProfileWorkflowResult> GetMyProfileByNameIdentifierAsync(string? nameIdentifier, CancellationToken cancellationToken = default);
     Task<UserCompleteDetailsDto?> GetPublicProfileAsync(string? username, CancellationToken cancellationToken = default);
+    Task<ResumeDto?> GetPublicResumeAsync(string? username, CancellationToken cancellationToken = default);
 
     Task<UserCompleteDetailsDto?> GetUserCompleteDetailsAsync(int userId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<UserCompleteDetailsDto>> GetUsersCompleteDetailsAsync(CancellationToken cancellationToken = default);

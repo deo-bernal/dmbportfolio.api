@@ -59,6 +59,70 @@ public class DmbReadRepository : IDmbReadRepository
         return user is null ? null : _mapper.Map<UserCompleteDetailsDto>(user);
     }
 
+    public async Task<ResumeDto?> GetPublicResumeAsync(string? username, CancellationToken cancellationToken = default)
+    {
+        var users = _dbContext.Users
+            .AsNoTracking()
+            .Include(u => u.UserDetails)
+            .Include(u => u.WorkHistories)
+            .Include(u => u.Educations)
+            .Where(u => u.Activated && u.IsViewable);
+
+        if (!string.IsNullOrWhiteSpace(username))
+        {
+            var normalized = username.Trim().ToLowerInvariant();
+            users = users.Where(u => u.Username.ToLower() == normalized);
+        }
+
+        var user = await users
+            .OrderByDescending(u => u.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (user is null)
+        {
+            return null;
+        }
+
+        return new ResumeDto
+        {
+            PersonalInfo = new ResumePersonalInfoDto
+            {
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                ContactNo = user.ContactNo,
+                Address = user.Address,
+                Summary = user.UserDetails?.Description
+            },
+            WorkHistory = user.WorkHistories
+                .OrderByDescending(x => x.FromDate ?? DateTime.MinValue)
+                .ThenByDescending(x => x.WorkHistoryId)
+                .Select(x => new ResumeWorkHistoryDto
+                {
+                    WorkHistoryId = x.WorkHistoryId,
+                    Company = x.Company,
+                    Position = x.Position,
+                    FromDate = x.FromDate,
+                    ToDate = x.ToDate,
+                    JobDescription = x.JobDescription
+                })
+                .ToList(),
+            Education = user.Educations
+                .OrderByDescending(x => x.StartDate ?? DateTime.MinValue)
+                .ThenByDescending(x => x.EducationId)
+                .Select(x => new ResumeEducationDto
+                {
+                    EducationId = x.EducationId,
+                    School = x.School,
+                    Address = x.Address,
+                    CourseTaken = x.CourseTaken,
+                    StartDate = x.StartDate,
+                    EndDate = x.EndDate
+                })
+                .ToList()
+        };
+    }
+
     public async Task<UserCompleteDetailsDto?> GetUserCompleteDetailsAsync(int userId, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users
