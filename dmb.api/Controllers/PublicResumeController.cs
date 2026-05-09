@@ -1,10 +1,12 @@
 using Dmb.Service.Interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace dmb.api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [AllowAnonymous]
     public class PublicResumeController : ControllerBase
     {
         private readonly IDmbReadService _dmbReadService;

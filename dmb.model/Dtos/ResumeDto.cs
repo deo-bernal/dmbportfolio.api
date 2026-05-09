@@ -5,6 +5,7 @@ public class ResumeDto
     public ResumePersonalInfoDto PersonalInfo { get; set; } = new();
     public List<ResumeWorkHistoryDto> WorkHistory { get; set; } = [];
     public List<ResumeEducationDto> Education { get; set; } = [];
+    public List<ResumeAffiliationDto> Affiliations { get; set; } = [];
 }
 
 public class ResumePersonalInfoDto
@@ -37,11 +38,21 @@ public class ResumeEducationDto
     public DateTime? EndDate { get; set; }
 }
 
+public class ResumeAffiliationDto
+{
+    public int AffiliationId { get; set; }
+    public string Organization { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public DateTime? IssueDate { get; set; }
+    public string Details { get; set; } = string.Empty;
+}
+
 public class UpdateResumeDto
 {
     public ResumePersonalInfoDto PersonalInfo { get; set; } = new();
     public List<ResumeWorkHistoryInputDto> WorkHistory { get; set; } = [];
     public List<ResumeEducationInputDto> Education { get; set; } = [];
+    public List<ResumeAffiliationInputDto> Affiliations { get; set; } = [];
 }
 
 public class ResumeWorkHistoryInputDto
@@ -60,4 +71,12 @@ public class ResumeEducationInputDto
     public string? CourseTaken { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
+}
+
+public class ResumeAffiliationInputDto
+{
+    public string Organization { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public DateTime? IssueDate { get; set; }
+    public string? Details { get; set; }
 }

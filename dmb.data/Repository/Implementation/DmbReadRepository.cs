@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Dmb.Data.Context;
 using Dmb.Data.Repository.Interface;
 using Dmb.Model.Dtos;
@@ -12,6 +12,22 @@ public class DmbReadRepository : IDmbReadRepository
 {
     private readonly DmbDbContext _dbContext;
     private readonly IMapper _mapper;
+
+    private static DateTime? NormalizeUtc(DateTime? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        return value.Value.Kind switch
+        {
+            DateTimeKind.Utc => value.Value,
+            DateTimeKind.Local => value.Value.ToUniversalTime(),
+            // ASP.NET often binds "YYYY-MM-DD" to Kind=Unspecified; Npgsql requires UTC for timestamptz.
+            _ => DateTime.SpecifyKind(value.Value, DateTimeKind.Utc),
+        };
+    }
 
     public DmbReadRepository(DmbDbContext dbContext, IMapper mapper)
     {
@@ -66,6 +82,7 @@ public class DmbReadRepository : IDmbReadRepository
             .Include(u => u.UserDetails)
             .Include(u => u.WorkHistories)
             .Include(u => u.Educations)
+            .Include(u => u.Affiliations)
             .Where(u => u.Activated && u.IsViewable);
 
         if (!string.IsNullOrWhiteSpace(username))
@@ -118,6 +135,18 @@ public class DmbReadRepository : IDmbReadRepository
                     CourseTaken = x.CourseTaken,
                     StartDate = x.StartDate,
                     EndDate = x.EndDate
+                })
+                .ToList(),
+            Affiliations = user.Affiliations
+                .OrderByDescending(x => x.IssueDate ?? DateTime.MinValue)
+                .ThenByDescending(x => x.AffiliationId)
+                .Select(x => new ResumeAffiliationDto
+                {
+                    AffiliationId = x.AffiliationId,
+                    Organization = x.Organization,
+                    Title = x.Title,
+                    IssueDate = x.IssueDate,
+                    Details = x.Details
                 })
                 .ToList()
         };
@@ -185,6 +214,7 @@ public class DmbReadRepository : IDmbReadRepository
             .Include(u => u.UserDetails)
             .Include(u => u.WorkHistories)
             .Include(u => u.Educations)
+            .Include(u => u.Affiliations)
             .FirstOrDefaultAsync(u => u.UserId == userId && u.Activated, cancellationToken);
 
         if (user is null)
@@ -228,6 +258,18 @@ public class DmbReadRepository : IDmbReadRepository
                     StartDate = x.StartDate,
                     EndDate = x.EndDate
                 })
+                .ToList(),
+            Affiliations = user.Affiliations
+                .OrderByDescending(x => x.IssueDate ?? DateTime.MinValue)
+                .ThenByDescending(x => x.AffiliationId)
+                .Select(x => new ResumeAffiliationDto
+                {
+                    AffiliationId = x.AffiliationId,
+                    Organization = x.Organization,
+                    Title = x.Title,
+                    IssueDate = x.IssueDate,
+                    Details = x.Details
+                })
                 .ToList()
         };
     }
@@ -238,6 +280,7 @@ public class DmbReadRepository : IDmbReadRepository
             .Include(u => u.UserDetails)
             .Include(u => u.WorkHistories)
             .Include(u => u.Educations)
+            .Include(u => u.Affiliations)
             .FirstOrDefaultAsync(u => u.UserId == userId && u.Activated, cancellationToken);
 
         if (user is null)
@@ -263,6 +306,7 @@ public class DmbReadRepository : IDmbReadRepository
 
         _dbContext.WorkHistories.RemoveRange(user.WorkHistories);
         _dbContext.Educations.RemoveRange(user.Educations);
+        _dbContext.Affiliations.RemoveRange(user.Affiliations);
 
         var workHistories = request.WorkHistory
             .Where(x => !string.IsNullOrWhiteSpace(x.Company) && !string.IsNullOrWhiteSpace(x.Position))
@@ -271,8 +315,8 @@ public class DmbReadRepository : IDmbReadRepository
                 UserId = user.UserId,
                 Company = x.Company.Trim(),
                 Position = x.Position.Trim(),
-                FromDate = x.FromDate,
-                ToDate = x.ToDate,
+                FromDate = NormalizeUtc(x.FromDate),
+                ToDate = NormalizeUtc(x.ToDate),
                 JobDescription = x.JobDescription?.Trim(),
                 CreatedAt = DateTimeOffset.UtcNow
             })
@@ -286,8 +330,21 @@ public class DmbReadRepository : IDmbReadRepository
                 School = x.School.Trim(),
                 Address = x.Address?.Trim(),
                 CourseTaken = x.CourseTaken?.Trim(),
-                StartDate = x.StartDate,
-                EndDate = x.EndDate,
+                StartDate = NormalizeUtc(x.StartDate),
+                EndDate = NormalizeUtc(x.EndDate),
+                CreatedAt = DateTimeOffset.UtcNow
+            })
+            .ToList();
+
+        var affiliationItems = request.Affiliations
+            .Where(x => !string.IsNullOrWhiteSpace(x.Organization) && !string.IsNullOrWhiteSpace(x.Title))
+            .Select(x => new Affiliation
+            {
+                UserId = user.UserId,
+                Organization = x.Organization.Trim(),
+                Title = x.Title.Trim(),
+                IssueDate = NormalizeUtc(x.IssueDate),
+                Details = x.Details?.Trim() ?? string.Empty,
                 CreatedAt = DateTimeOffset.UtcNow
             })
             .ToList();
@@ -300,6 +357,11 @@ public class DmbReadRepository : IDmbReadRepository
         if (educationItems.Count > 0)
         {
             await _dbContext.Educations.AddRangeAsync(educationItems, cancellationToken);
+        }
+
+        if (affiliationItems.Count > 0)
+        {
+            await _dbContext.Affiliations.AddRangeAsync(affiliationItems, cancellationToken);
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);

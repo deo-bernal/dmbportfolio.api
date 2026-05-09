@@ -14,6 +14,7 @@ namespace Dmb.Data.Context
         public DbSet<Project> Projects { get; set; } = null!;
         public DbSet<WorkHistory> WorkHistories { get; set; } = null!;
         public DbSet<Education> Educations { get; set; } = null!;
+        public DbSet<Affiliation> Affiliations { get; set; } = null!;
         public DbSet<ProjectType> ProjectTypes { get; set; } = null!;
         public DbSet<RevokedToken> RevokedTokens { get; set; } = null!;
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
@@ -78,6 +79,14 @@ namespace Dmb.Data.Context
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
+            modelBuilder.Entity<Affiliation>(entity =>
+            {
+                entity.HasOne(a => a.User)
+                    .WithMany(u => u.Affiliations)
+                    .HasForeignKey(a => a.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
             modelBuilder.Entity<RevokedToken>(entity =>
             {
                 entity.HasIndex(token => token.Jti).IsUnique();
@@ -109,6 +118,7 @@ namespace Dmb.Data.Context
             modelBuilder.Entity<Project>().Property(p => p.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<WorkHistory>().Property(w => w.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<Education>().Property(e => e.CreatedAt).ValueGeneratedOnAdd();
+            modelBuilder.Entity<Affiliation>().Property(a => a.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<ProjectType>().Property(pt => pt.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<RevokedToken>().Property(token => token.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<PasswordResetToken>().Property(t => t.CreatedAt).ValueGeneratedOnAdd();

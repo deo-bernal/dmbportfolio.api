@@ -55,6 +55,7 @@ namespace Dmb.Data.Entities
         public ICollection<Project> Projects { get; set; } = new List<Project>();
         public ICollection<WorkHistory> WorkHistories { get; set; } = new List<WorkHistory>();
         public ICollection<Education> Educations { get; set; } = new List<Education>();
+        public ICollection<Affiliation> Affiliations { get; set; } = new List<Affiliation>();
         public ICollection<PasswordResetToken> PasswordResetTokens { get; set; } = new List<PasswordResetToken>();
         public ICollection<AccountActivationToken> AccountActivationTokens { get; set; } = new List<AccountActivationToken>();
     }
