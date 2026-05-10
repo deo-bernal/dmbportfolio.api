@@ -2,5 +2,6 @@
   <Project Path="../dmb.data/dmb.data.csproj" Id="5e061019-845a-4d6b-b7c7-68eebd1b6048" />
   <Project Path="../dmb.model/dmb.model.csproj" />
   <Project Path="../dmb.service/dmb.service.csproj" />
+  <Project Path="../dmb.test/dmb.test.csproj" />
   <Project Path="dmb.api.csproj" />
 </Solution>
