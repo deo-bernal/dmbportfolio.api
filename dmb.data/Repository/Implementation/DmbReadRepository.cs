@@ -4,7 +4,10 @@ using Dmb.Data.Repository.Interface;
 using Dmb.Model.Dtos;
 using Dmb.Model.Enums;
 using Dmb.Data.Entities;
+using Dmb.Model.Abstractions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Dmb.Data.Repository.Implementation;
 
@@ -12,6 +15,9 @@ public class DmbReadRepository : IDmbReadRepository
 {
     private readonly DmbDbContext _dbContext;
     private readonly IMapper _mapper;
+    private readonly IConfiguration _configuration;
+    private readonly IActivationEmailSender _activationEmailSender;
+    private readonly ILogger<DmbReadRepository> _logger;
 
     private static DateTime? NormalizeUtc(DateTime? value)
     {
@@ -29,10 +35,18 @@ public class DmbReadRepository : IDmbReadRepository
         };
     }
 
-    public DmbReadRepository(DmbDbContext dbContext, IMapper mapper)
+    public DmbReadRepository(
+        DmbDbContext dbContext,
+        IMapper mapper,
+        IConfiguration configuration,
+        IActivationEmailSender activationEmailSender,
+        ILogger<DmbReadRepository> logger)
     {
         _dbContext = dbContext;
         _mapper = mapper;
+        _configuration = configuration;
+        _activationEmailSender = activationEmailSender;
+        _logger = logger;
     }
 
     public async Task<MyProfileWorkflowResult> GetMyProfileByNameIdentifierAsync(
@@ -404,6 +418,45 @@ public class DmbReadRepository : IDmbReadRepository
 
         await ApplyProfileChangesAsync(user, request, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> DeleteAccountAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var accountEmail = await _dbContext.Users
+            .AsNoTracking()
+            .Where(u => u.UserId == userId)
+            .Select(u => u.Email)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(accountEmail))
+        {
+            return false;
+        }
+
+        await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $@"CALL ""SP_DeleteAccount""({userId});",
+            cancellationToken);
+
+        var monitoringEmail = (_configuration["Email:SmtpUser"] ?? string.Empty).Trim();
+        if (!string.IsNullOrWhiteSpace(monitoringEmail))
+        {
+            try
+            {
+                await _activationEmailSender.SendAccountDeletionMonitoringEmailAsync(
+                    monitoringEmail,
+                    accountEmail,
+                    cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Account deletion succeeded but monitoring email failed for deleted account {DeletedAccountEmail}.",
+                    accountEmail);
+            }
+        }
+
         return true;
     }
 

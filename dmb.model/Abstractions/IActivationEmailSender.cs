@@ -11,4 +11,9 @@ public interface IActivationEmailSender
         string monitoringEmail,
         string activatedAccountEmail,
         CancellationToken cancellationToken = default);
+
+    Task SendAccountDeletionMonitoringEmailAsync(
+        string monitoringEmail,
+        string deletedAccountEmail,
+        CancellationToken cancellationToken = default);
 }

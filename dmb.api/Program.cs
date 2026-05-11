@@ -220,6 +220,32 @@ await using (var scope = app.Services.CreateAsyncScope())
                     ON DELETE CASCADE
             );
             """);
+
+        await dbContext.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE "RevokedToken"
+                ADD COLUMN IF NOT EXISTS "UserId" INTEGER;
+            """);
+
+        await dbContext.Database.ExecuteSqlRawAsync("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_constraint
+                    WHERE conname = 'FK_RevokedToken_User'
+                ) THEN
+                    ALTER TABLE "RevokedToken"
+                        ADD CONSTRAINT "FK_RevokedToken_User"
+                            FOREIGN KEY ("UserId") REFERENCES "User" ("UserId")
+                            ON DELETE CASCADE;
+                END IF;
+            END $$;
+            """);
+
+        await dbContext.Database.ExecuteSqlRawAsync("""
+            CREATE INDEX IF NOT EXISTS "IX_RevokedToken_UserId"
+            ON "RevokedToken" ("UserId");
+            """);
     }
     catch (Exception ex)
     {

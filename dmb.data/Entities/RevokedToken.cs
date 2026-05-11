@@ -14,7 +14,11 @@ public class RevokedToken
     [Required]
     public string Jti { get; set; } = null!;
 
+    public int? UserId { get; set; }
+
     public DateTimeOffset ExpiresAt { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    public User? User { get; set; }
 }

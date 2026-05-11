@@ -64,6 +64,22 @@ public class EmailService : IEmailService, IActivationEmailSender, IPasswordRese
         await SendByConfiguredProviderAsync(monitoringEmail, subject, htmlBody, cancellationToken);
     }
 
+    public async Task SendAccountDeletionMonitoringEmailAsync(
+        string monitoringEmail,
+        string deletedAccountEmail,
+        CancellationToken cancellationToken = default)
+    {
+        const string subject = "Account Deleted";
+        var htmlBody = $@"
+                <h2>Account deleted</h2>
+                <p>An account has been permanently deleted.</p>
+                <p><strong>Email:</strong> {System.Net.WebUtility.HtmlEncode(deletedAccountEmail)}</p>
+                <p><strong>Deleted At (UTC):</strong> {DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss}</p>
+            ";
+
+        await SendByConfiguredProviderAsync(monitoringEmail, subject, htmlBody, cancellationToken);
+    }
+
     private Task SendByConfiguredProviderAsync(
         string toEmail,
         string subject,

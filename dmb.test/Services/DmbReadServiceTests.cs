@@ -61,5 +61,21 @@ public class DmbReadServiceTests
             x => x.UpsertMyResumeAsync(5, It.IsAny<UpdateResumeDto>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
+
+    [Fact]
+    public async Task DeleteAccountAsync_DelegatesToRepository()
+    {
+        _repository
+            .Setup(x => x.DeleteAccountAsync(5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        var sut = CreateSut();
+
+        var ok = await sut.DeleteAccountAsync(5);
+
+        Assert.True(ok);
+        _repository.Verify(
+            x => x.DeleteAccountAsync(5, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
 }
 

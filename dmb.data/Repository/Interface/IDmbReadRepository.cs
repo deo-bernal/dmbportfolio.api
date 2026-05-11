@@ -18,4 +18,5 @@ public interface IDmbReadRepository
     Task<bool> UpsertMyResumeAsync(int userId, UpdateResumeDto request, CancellationToken cancellationToken = default);
     Task<CreateMyProfileStatus> CreateMyProfileAsync(int userId, UpdateMyProfileDto request, CancellationToken cancellationToken = default);
     Task<bool> UpdateMyProfileAsync(int userId, UpdateMyProfileDto request, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAccountAsync(int userId, CancellationToken cancellationToken = default);
 }

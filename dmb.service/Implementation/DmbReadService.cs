@@ -82,4 +82,9 @@ public class DmbReadService : IDmbReadService
     {
         return _dmbReadRepository.UpdateMyProfileAsync(userId, request, cancellationToken);
     }
+
+    public Task<bool> DeleteAccountAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return _dmbReadRepository.DeleteAccountAsync(userId, cancellationToken);
+    }
 }

@@ -53,7 +53,7 @@ public class AuthServiceTests
 
         await sut.RevokeJtiAsync("jti-1", expires);
 
-        _authRepository.Verify(x => x.RevokeJtiAsync("jti-1", expires, It.IsAny<CancellationToken>()), Times.Once);
+        _authRepository.Verify(x => x.RevokeJtiAsync("jti-1", expires, null, It.IsAny<CancellationToken>()), Times.Once);
     }
 }
 

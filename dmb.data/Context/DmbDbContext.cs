@@ -90,6 +90,10 @@ namespace Dmb.Data.Context
             modelBuilder.Entity<RevokedToken>(entity =>
             {
                 entity.HasIndex(token => token.Jti).IsUnique();
+                entity.HasOne(token => token.User)
+                    .WithMany()
+                    .HasForeignKey(token => token.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<PasswordResetToken>(entity =>

@@ -25,9 +25,10 @@ public class AuthService : IAuthService
         string? username,
         string? jti,
         string? expClaim,
+        int? userId = null,
         CancellationToken cancellationToken = default)
     {
-        return _authRepository.LogoutAsync(username, jti, expClaim, cancellationToken);
+        return _authRepository.LogoutAsync(username, jti, expClaim, userId, cancellationToken);
     }
 
     public Task<ForgotPasswordRequestStatus> RequestPasswordResetAsync(
@@ -73,9 +74,9 @@ public class AuthService : IAuthService
         return _authRepository.IsJtiRevokedAsync(jti, cancellationToken);
     }
 
-    public Task RevokeJtiAsync(string jti, DateTimeOffset expiresAt, CancellationToken cancellationToken = default)
+    public Task RevokeJtiAsync(string jti, DateTimeOffset expiresAt, int? userId = null, CancellationToken cancellationToken = default)
     {
-        return _authRepository.RevokeJtiAsync(jti, expiresAt, cancellationToken);
+        return _authRepository.RevokeJtiAsync(jti, expiresAt, userId, cancellationToken);
     }
 
     public Task<LoggedInUserDto> RegisterAsync(RegisterDto request, CancellationToken cancellationToken = default)

@@ -34,10 +34,17 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
+        int? userId = null;
+        if (int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var parsedUserId))
+        {
+            userId = parsedUserId;
+        }
+
         var workflow = await _authService.LogoutAsync(
             User.Identity?.Name,
             User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value,
             User.FindFirst(JwtRegisteredClaimNames.Exp)?.Value,
+            userId,
             cancellationToken);
 
         Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";

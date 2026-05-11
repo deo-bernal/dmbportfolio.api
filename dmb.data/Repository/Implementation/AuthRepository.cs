@@ -63,6 +63,7 @@ public class AuthRepository : IAuthRepository
         string? username,
         string? jti,
         string? expClaim,
+        int? userId = null,
         CancellationToken cancellationToken = default)
     {
         if (!string.IsNullOrWhiteSpace(jti))
@@ -80,7 +81,7 @@ public class AuthRepository : IAuthRepository
             }
 
             _cache.Set($"revoked_jti:{jti}", true, ttl);
-            await RevokeJtiAsync(jti, jwtExpiresAt, cancellationToken);
+            await RevokeJtiAsync(jti, jwtExpiresAt, userId, cancellationToken);
         }
 
         return new LogoutWorkflowResult { Username = username };
@@ -281,7 +282,11 @@ public class AuthRepository : IAuthRepository
             .AnyAsync(revokedToken => revokedToken.Jti == jti, cancellationToken);
     }
 
-    public async Task RevokeJtiAsync(string jti, DateTimeOffset expiresAt, CancellationToken cancellationToken = default)
+    public async Task RevokeJtiAsync(
+        string jti,
+        DateTimeOffset expiresAt,
+        int? userId = null,
+        CancellationToken cancellationToken = default)
     {
         var alreadyRevoked = await IsJtiRevokedAsync(jti, cancellationToken);
         if (alreadyRevoked)
@@ -292,6 +297,7 @@ public class AuthRepository : IAuthRepository
         _dbContext.RevokedTokens.Add(new RevokedToken
         {
             Jti = jti,
+            UserId = userId,
             ExpiresAt = expiresAt,
             CreatedAt = DateTimeOffset.UtcNow
         });
