@@ -99,7 +99,7 @@ public class RegistrationRepository : IRegistrationRepository
             return ActivateAccountOutcome.InvalidOrExpiredToken;
         }
 
-        var monitoringEmail = (_configuration["Email:SmtpUser"] ?? string.Empty).Trim();
+        var monitoringEmail = (_configuration["Email:MonitoringEmail"] ?? string.Empty).Trim();
         if (!string.IsNullOrWhiteSpace(monitoringEmail) && !string.IsNullOrWhiteSpace(activatedAccountEmail))
         {
             try

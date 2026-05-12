@@ -5,6 +5,10 @@ namespace Dmb.Data.Repository.Interface;
 public interface IAuthRepository
 {
     Task<AuthTokenLoginResult> LoginAndIssueJwtAsync(LoginDto model, CancellationToken cancellationToken = default);
+    Task<AuthTokenLoginResult> LoginAndIssueAppTokensAsync(LoginDto model, CancellationToken cancellationToken = default);
+    Task<AuthTokenLoginResult> RefreshAppTokenAsync(AppRefreshTokenRequestDto request, CancellationToken cancellationToken = default);
+    Task<bool> SetUserPinAsync(int userId, string pin, CancellationToken cancellationToken = default);
+    Task<bool> VerifyUserPinAsync(int userId, string pin, CancellationToken cancellationToken = default);
     Task<LogoutWorkflowResult> LogoutAsync(string? username, string? jti, string? expClaim, int? userId = null, CancellationToken cancellationToken = default);
 
     Task<UserDto?> GetUserRecordAsync(string username, CancellationToken cancellationToken = default);

@@ -59,6 +59,142 @@ public class AuthRepository : IAuthRepository
         };
     }
 
+    public async Task<AuthTokenLoginResult> LoginAndIssueAppTokensAsync(LoginDto model, CancellationToken cancellationToken = default)
+    {
+        var login = await LoginAsync(model.Username, model.Password, cancellationToken);
+        if (!string.IsNullOrEmpty(login.BlockReason))
+        {
+            return new AuthTokenLoginResult
+            {
+                Status = AuthTokenLoginStatus.AccountBlocked,
+                BlockReason = login.BlockReason
+            };
+        }
+
+        if (login.User is null)
+        {
+            return new AuthTokenLoginResult { Status = AuthTokenLoginStatus.InvalidCredentials };
+        }
+
+        var accessToken = CreateAccessToken(login.User);
+        var refreshToken = await RotateRefreshTokenAsync(login.User.UserId, cancellationToken);
+        var isPinSet = await _dbContext.Users
+            .AsNoTracking()
+            .Where(u => u.UserId == login.User.UserId)
+            .Select(u => !string.IsNullOrEmpty(u.AppPinHash) && !string.IsNullOrEmpty(u.AppPinSalt))
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return new AuthTokenLoginResult
+        {
+            Status = AuthTokenLoginStatus.Success,
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            IsPinSet = isPinSet
+        };
+    }
+
+    public async Task<AuthTokenLoginResult> RefreshAppTokenAsync(
+        AppRefreshTokenRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        int? userId;
+        try
+        {
+            userId = ExtractUserIdFromAccessToken(request.AccessToken);
+        }
+        catch
+        {
+            userId = null;
+        }
+        if (userId is null)
+        {
+            return new AuthTokenLoginResult { Status = AuthTokenLoginStatus.InvalidCredentials };
+        }
+
+        var refreshTokenHash = HashToken(request.RefreshToken);
+        var persistedToken = await _dbContext.AppRefreshTokens
+            .FirstOrDefaultAsync(
+                t => t.UserId == userId.Value
+                  && t.RefreshTokenHash == refreshTokenHash
+                  && t.RevokedAt == null,
+                cancellationToken);
+
+        if (persistedToken is null)
+        {
+            return new AuthTokenLoginResult { Status = AuthTokenLoginStatus.InvalidCredentials };
+        }
+
+        if (persistedToken.ExpiresAt <= DateTimeOffset.UtcNow)
+        {
+            persistedToken.RevokedAt = DateTimeOffset.UtcNow;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return new AuthTokenLoginResult
+            {
+                Status = AuthTokenLoginStatus.ExpiredRefreshToken
+            };
+        }
+
+        var user = await _dbContext.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.UserId == userId.Value, cancellationToken);
+        if (user is null)
+        {
+            return new AuthTokenLoginResult { Status = AuthTokenLoginStatus.InvalidCredentials };
+        }
+
+        var loginUser = new LoggedInUserDto
+        {
+            UserId = user.UserId,
+            Username = user.Username,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            Activated = user.Activated,
+            CreatedAt = user.CreatedAt
+        };
+
+        persistedToken.RevokedAt = DateTimeOffset.UtcNow;
+        var newRefreshToken = await RotateRefreshTokenAsync(user.UserId, cancellationToken);
+        var newAccessToken = CreateAccessToken(loginUser);
+
+        return new AuthTokenLoginResult
+        {
+            Status = AuthTokenLoginStatus.Success,
+            AccessToken = newAccessToken,
+            RefreshToken = newRefreshToken,
+            IsPinSet = !string.IsNullOrEmpty(user.AppPinHash) && !string.IsNullOrEmpty(user.AppPinSalt)
+        };
+    }
+
+    public async Task<bool> SetUserPinAsync(int userId, string pin, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
+        if (user is null)
+        {
+            return false;
+        }
+
+        var (pinHash, pinSalt) = CreatePasswordHash(pin);
+        user.AppPinHash = pinHash;
+        user.AppPinSalt = pinSalt;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> VerifyUserPinAsync(int userId, string pin, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
+
+        if (user is null || string.IsNullOrEmpty(user.AppPinHash) || string.IsNullOrEmpty(user.AppPinSalt))
+        {
+            return false;
+        }
+
+        return VerifyPassword(pin, user.AppPinSalt, user.AppPinHash);
+    }
+
     public async Task<LogoutWorkflowResult> LogoutAsync(
         string? username,
         string? jti,
@@ -113,6 +249,64 @@ public class AuthRepository : IAuthRepository
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private async Task<string> RotateRefreshTokenAsync(int userId, CancellationToken cancellationToken)
+    {
+        var existing = await _dbContext.AppRefreshTokens
+            .Where(t => t.UserId == userId && t.RevokedAt == null)
+            .ToListAsync(cancellationToken);
+        foreach (var token in existing)
+        {
+            token.RevokedAt = DateTimeOffset.UtcNow;
+        }
+
+        var refreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        var tokenHash = HashToken(refreshToken);
+
+        _dbContext.AppRefreshTokens.Add(new AppRefreshToken
+        {
+            UserId = userId,
+            RefreshTokenHash = tokenHash,
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(30),
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return refreshToken;
+    }
+
+    private string HashToken(string token)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        return Convert.ToHexString(bytes);
+    }
+
+    private int? ExtractUserIdFromAccessToken(string accessToken)
+    {
+        var secret = _configuration["Jwt:Secret"]
+            ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
+        var issuer = _configuration["Jwt:Issuer"] ?? "dmbapp";
+        var audience = _configuration["Jwt:Audience"] ?? "dmbapp";
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var principal = tokenHandler.ValidateToken(accessToken, new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
+            ValidateIssuer = true,
+            ValidIssuer = issuer,
+            ValidateAudience = true,
+            ValidAudience = audience,
+            ValidateLifetime = false
+        }, out _);
+
+        if (int.TryParse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId))
+        {
+            return userId;
+        }
+
+        return null;
     }
 
     public async Task<LoginResult> LoginAsync(string username, string password, CancellationToken cancellationToken = default)

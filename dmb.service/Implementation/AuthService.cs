@@ -21,6 +21,28 @@ public class AuthService : IAuthService
         return _authRepository.LoginAndIssueJwtAsync(model, cancellationToken);
     }
 
+    public Task<AuthTokenLoginResult> LoginForAppAsync(LoginDto model, CancellationToken cancellationToken = default)
+    {
+        return _authRepository.LoginAndIssueAppTokensAsync(model, cancellationToken);
+    }
+
+    public Task<AuthTokenLoginResult> RefreshAppTokenAsync(
+        AppRefreshTokenRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        return _authRepository.RefreshAppTokenAsync(request, cancellationToken);
+    }
+
+    public Task<bool> SetUserPinAsync(int userId, string pin, CancellationToken cancellationToken = default)
+    {
+        return _authRepository.SetUserPinAsync(userId, pin, cancellationToken);
+    }
+
+    public Task<bool> VerifyUserPinAsync(int userId, string pin, CancellationToken cancellationToken = default)
+    {
+        return _authRepository.VerifyUserPinAsync(userId, pin, cancellationToken);
+    }
+
     public Task<LogoutWorkflowResult> LogoutAsync(
         string? username,
         string? jti,

@@ -438,7 +438,7 @@ public class DmbReadRepository : IDmbReadRepository
             $@"CALL ""SP_DeleteAccount""({userId});",
             cancellationToken);
 
-        var monitoringEmail = (_configuration["Email:SmtpUser"] ?? string.Empty).Trim();
+        var monitoringEmail = (_configuration["Email:MonitoringEmail"] ?? string.Empty).Trim();
         if (!string.IsNullOrWhiteSpace(monitoringEmail))
         {
             try

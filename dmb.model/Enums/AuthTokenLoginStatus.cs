@@ -4,5 +4,6 @@ public enum AuthTokenLoginStatus
 {
     Success,
     AccountBlocked,
-    InvalidCredentials
+    InvalidCredentials,
+    ExpiredRefreshToken
 }

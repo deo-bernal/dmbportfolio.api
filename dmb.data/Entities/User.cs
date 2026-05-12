@@ -45,6 +45,12 @@ namespace Dmb.Data.Entities
         [MaxLength(30)]
         public string? ContactNo { get; set; }
 
+        [MaxLength(255)]
+        public string? AppPinHash { get; set; }
+
+        [MaxLength(255)]
+        public string? AppPinSalt { get; set; }
+
         public bool Activated { get; set; }
         public bool IsViewable { get; set; }
 
@@ -58,5 +64,6 @@ namespace Dmb.Data.Entities
         public ICollection<Affiliation> Affiliations { get; set; } = new List<Affiliation>();
         public ICollection<PasswordResetToken> PasswordResetTokens { get; set; } = new List<PasswordResetToken>();
         public ICollection<AccountActivationToken> AccountActivationTokens { get; set; } = new List<AccountActivationToken>();
+        public ICollection<AppRefreshToken> AppRefreshTokens { get; set; } = new List<AppRefreshToken>();
     }
 }

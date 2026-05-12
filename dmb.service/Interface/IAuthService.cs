@@ -6,6 +6,10 @@ namespace Dmb.Service.Interface;
 public interface IAuthService
 {
     Task<AuthTokenLoginResult> LoginWithJwtAsync(LoginDto model, CancellationToken cancellationToken = default);
+    Task<AuthTokenLoginResult> LoginForAppAsync(LoginDto model, CancellationToken cancellationToken = default);
+    Task<AuthTokenLoginResult> RefreshAppTokenAsync(AppRefreshTokenRequestDto request, CancellationToken cancellationToken = default);
+    Task<bool> SetUserPinAsync(int userId, string pin, CancellationToken cancellationToken = default);
+    Task<bool> VerifyUserPinAsync(int userId, string pin, CancellationToken cancellationToken = default);
     Task<LogoutWorkflowResult> LogoutAsync(string? username, string? jti, string? expClaim, int? userId = null, CancellationToken cancellationToken = default);
 
     Task<ForgotPasswordRequestStatus> RequestPasswordResetAsync(ForgotPasswordDto request, CancellationToken cancellationToken = default);
