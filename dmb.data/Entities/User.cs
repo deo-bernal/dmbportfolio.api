@@ -53,6 +53,8 @@ namespace Dmb.Data.Entities
 
         public bool Activated { get; set; }
         public bool IsViewable { get; set; }
+        public bool IsAdmin { get; set; }
+        public bool IsSuperAdmin { get; set; }
 
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 

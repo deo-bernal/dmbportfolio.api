@@ -542,4 +542,41 @@ public class DmbReadRepository : IDmbReadRepository
             await _dbContext.Projects.AddRangeAsync(projectsToAdd, cancellationToken);
         }
     }
+
+    public async Task<IReadOnlyList<AdminUserDto>> ListAdminUsersAsync(CancellationToken cancellationToken = default)
+    {
+        var users = await _dbContext.Users
+            .AsNoTracking()
+            .OrderBy(user => user.Email)
+            .ToListAsync(cancellationToken);
+
+        return _mapper.Map<IReadOnlyList<AdminUserDto>>(users);
+    }
+
+    public async Task<bool> TrySetUserIsAdminAsync(int targetUserId, bool isAdmin, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users.FirstOrDefaultAsync(item => item.UserId == targetUserId, cancellationToken);
+        if (user is null)
+        {
+            return false;
+        }
+
+        user.IsAdmin = isAdmin;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public Task<bool> UserHasLeadAccessAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Users
+            .AsNoTracking()
+            .AnyAsync(user => user.UserId == userId && (user.IsAdmin || user.IsSuperAdmin), cancellationToken);
+    }
+
+    public Task<bool> UserIsSuperAdminAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Users
+            .AsNoTracking()
+            .AnyAsync(user => user.UserId == userId && user.IsSuperAdmin, cancellationToken);
+    }
 }

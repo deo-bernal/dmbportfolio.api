@@ -10,6 +10,7 @@ public class DmbDetailsMapperProfile : Profile
     {
         CreateMap<User, UserDto>();
         CreateMap<User, UserCompleteDetailsDto>();
+        CreateMap<User, AdminUserDto>();
 
         CreateMap<UserDetails, UserDetailsDto>()
             .ForMember(destination => destination.User, options => options.Ignore());

@@ -87,4 +87,24 @@ public class DmbReadService : IDmbReadService
     {
         return _dmbReadRepository.DeleteAccountAsync(userId, cancellationToken);
     }
+
+    public Task<IReadOnlyList<AdminUserDto>> ListAdminUsersAsync(CancellationToken cancellationToken = default)
+    {
+        return _dmbReadRepository.ListAdminUsersAsync(cancellationToken);
+    }
+
+    public Task<bool> TrySetUserIsAdminAsync(int targetUserId, bool isAdmin, CancellationToken cancellationToken = default)
+    {
+        return _dmbReadRepository.TrySetUserIsAdminAsync(targetUserId, isAdmin, cancellationToken);
+    }
+
+    public Task<bool> UserHasLeadAccessAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return _dmbReadRepository.UserHasLeadAccessAsync(userId, cancellationToken);
+    }
+
+    public Task<bool> UserIsSuperAdminAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return _dmbReadRepository.UserIsSuperAdminAsync(userId, cancellationToken);
+    }
 }

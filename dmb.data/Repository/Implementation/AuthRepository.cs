@@ -150,7 +150,9 @@ public class AuthRepository : IAuthRepository
             LastName = user.LastName,
             Email = user.Email,
             Activated = user.Activated,
-            CreatedAt = user.CreatedAt
+            CreatedAt = user.CreatedAt,
+            IsAdmin = user.IsAdmin,
+            IsSuperAdmin = user.IsSuperAdmin
         };
 
         persistedToken.RevokedAt = DateTimeOffset.UtcNow;
@@ -340,7 +342,9 @@ public class AuthRepository : IAuthRepository
                 LastName = user.LastName,
                 Email = user.Email,
                 Activated = user.Activated,
-                CreatedAt = user.CreatedAt
+                CreatedAt = user.CreatedAt,
+                IsAdmin = user.IsAdmin,
+                IsSuperAdmin = user.IsSuperAdmin
             }
         };
     }
@@ -371,7 +375,9 @@ public class AuthRepository : IAuthRepository
             LastName = user.LastName,
             Email = user.Email,
             Activated = user.Activated,
-            CreatedAt = user.CreatedAt
+            CreatedAt = user.CreatedAt,
+            IsAdmin = user.IsAdmin,
+            IsSuperAdmin = user.IsSuperAdmin
         };
     }
 

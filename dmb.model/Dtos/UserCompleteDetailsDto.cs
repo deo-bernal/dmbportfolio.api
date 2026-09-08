@@ -11,6 +11,8 @@ public class UserCompleteDetailsDto
     public string? ContactNo { get; set; }
     public bool Activated { get; set; }
     public bool IsViewable { get; set; }
+    public bool IsAdmin { get; set; }
+    public bool IsSuperAdmin { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public UserDetailsDto? UserDetails { get; set; }
     public ICollection<ProjectDto> Projects { get; set; } = new List<ProjectDto>();

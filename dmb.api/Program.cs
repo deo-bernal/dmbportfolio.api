@@ -163,6 +163,29 @@ await using (var scope = app.Services.CreateAsyncScope())
 
         await dbContext.Database.ExecuteSqlRawAsync("""
             ALTER TABLE "User"
+                ADD COLUMN IF NOT EXISTS "IsAdmin" BOOLEAN NOT NULL DEFAULT FALSE;
+            """);
+
+        await dbContext.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE "User"
+                ADD COLUMN IF NOT EXISTS "IsSuperAdmin" BOOLEAN NOT NULL DEFAULT FALSE;
+            """);
+
+        await dbContext.Database.ExecuteSqlRawAsync("""
+            UPDATE "User"
+            SET "IsSuperAdmin" = TRUE,
+                "IsAdmin" = TRUE
+            WHERE lower("Email") = 'deobernal@gmail.com';
+            """);
+
+        await dbContext.Database.ExecuteSqlRawAsync("""
+            UPDATE "User"
+            SET "IsSuperAdmin" = FALSE
+            WHERE lower("Email") <> 'deobernal@gmail.com';
+            """);
+
+        await dbContext.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE "User"
                 ADD COLUMN IF NOT EXISTS "Address" VARCHAR(255);
             """);
 

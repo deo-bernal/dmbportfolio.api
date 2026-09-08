@@ -36,8 +36,10 @@ CREATE TABLE "User"
     "ContactNo"   VARCHAR(30),
     "AppPinHash"  VARCHAR(255),
     "AppPinSalt"  VARCHAR(255),
-    "Activated"   BOOLEAN NOT NULL DEFAULT TRUE,
+            "Activated"   BOOLEAN NOT NULL DEFAULT TRUE,
     "IsViewable"  BOOLEAN NOT NULL DEFAULT FALSE,
+    "IsAdmin"     BOOLEAN NOT NULL DEFAULT FALSE,
+    "IsSuperAdmin" BOOLEAN NOT NULL DEFAULT FALSE,
     "CreatedAt"   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE UNIQUE INDEX "UX_User_Username_FirstName_LastName" ON "User" ("Username", "FirstName", "LastName");
@@ -106,6 +108,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS "UX_AccountActivationToken_Token" ON "AccountA
 -- 8.1) Incremental: add visibility + uniqueness constraints on existing User table
 ALTER TABLE "User"
     ADD COLUMN IF NOT EXISTS "IsViewable" BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE "User"
+    ADD COLUMN IF NOT EXISTS "IsAdmin" BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE "User"
+    ADD COLUMN IF NOT EXISTS "IsSuperAdmin" BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE "User"
     ADD COLUMN IF NOT EXISTS "Address" VARCHAR(255);
 ALTER TABLE "User"
@@ -351,9 +357,9 @@ ALTER TABLE "Project"
 
 -- 3) Seed Users (based on ProfileController response)
 -- Actual password for the seeded user: Password@123
-INSERT INTO "User" ("Username", "PasswordHash", "PasswordSalt", "FirstName", "LastName", "Email", "Address", "ContactNo", "Activated", "IsViewable", "CreatedAt")
+INSERT INTO "User" ("Username", "PasswordHash", "PasswordSalt", "FirstName", "LastName", "Email", "Address", "ContactNo", "Activated", "IsViewable", "IsAdmin", "IsSuperAdmin", "CreatedAt")
 VALUES
-('deobernal@gmail.com', 'vHgVB+7WP1+kaDN0PgGjr0p+sqtr1avXf+WGkpRlYb6eI6PdvsU/BuNMyus+sJX2PN3XWOAq67s4HaCs9N1f4w==', 'nL3mQ8vX1pR7kD5sT2wB9A==', 'Deo', 'Bernal', 'deobernal@gmail.com', NULL, '+63 925 455 6063', TRUE, TRUE, NOW())
+('deobernal@gmail.com', 'vHgVB+7WP1+kaDN0PgGjr0p+sqtr1avXf+WGkpRlYb6eI6PdvsU/BuNMyus+sJX2PN3XWOAq67s4HaCs9N1f4w==', 'nL3mQ8vX1pR7kD5sT2wB9A==', 'Deo', 'Bernal', 'deobernal@gmail.com', NULL, '+63 925 455 6063', TRUE, TRUE, TRUE, TRUE, NOW())
 ON CONFLICT ("Username") DO UPDATE
 SET
     "PasswordHash" = EXCLUDED."PasswordHash",
@@ -365,7 +371,18 @@ SET
     "ContactNo" = EXCLUDED."ContactNo",
     "Activated" = EXCLUDED."Activated",
     "IsViewable" = EXCLUDED."IsViewable",
+    "IsAdmin" = EXCLUDED."IsAdmin",
+    "IsSuperAdmin" = EXCLUDED."IsSuperAdmin",
     "CreatedAt" = EXCLUDED."CreatedAt";
+
+UPDATE "User"
+SET "IsSuperAdmin" = TRUE,
+    "IsAdmin" = TRUE
+WHERE lower("Email") = 'deobernal@gmail.com';
+
+UPDATE "User"
+SET "IsSuperAdmin" = FALSE
+WHERE lower("Email") <> 'deobernal@gmail.com';
 
 -- 4) Seed UserDetails (portfolio summary + skills + video)
 INSERT INTO "UserDetails" ("UserId", "Description", "Skills", "Video")

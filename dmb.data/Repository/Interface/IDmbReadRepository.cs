@@ -19,4 +19,8 @@ public interface IDmbReadRepository
     Task<CreateMyProfileStatus> CreateMyProfileAsync(int userId, UpdateMyProfileDto request, CancellationToken cancellationToken = default);
     Task<bool> UpdateMyProfileAsync(int userId, UpdateMyProfileDto request, CancellationToken cancellationToken = default);
     Task<bool> DeleteAccountAsync(int userId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<AdminUserDto>> ListAdminUsersAsync(CancellationToken cancellationToken = default);
+    Task<bool> TrySetUserIsAdminAsync(int targetUserId, bool isAdmin, CancellationToken cancellationToken = default);
+    Task<bool> UserHasLeadAccessAsync(int userId, CancellationToken cancellationToken = default);
+    Task<bool> UserIsSuperAdminAsync(int userId, CancellationToken cancellationToken = default);
 }
