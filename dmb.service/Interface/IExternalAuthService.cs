@@ -11,6 +11,7 @@ public interface IExternalAuthService
         string? code,
         string? state,
         string? error,
+        string? errorDescription,
         string callbackUrl,
         CancellationToken cancellationToken = default);
 

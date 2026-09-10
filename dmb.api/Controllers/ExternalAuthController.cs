@@ -39,6 +39,7 @@ public class ExternalAuthController : ControllerBase
         [FromQuery] string? code,
         [FromQuery] string? state,
         [FromQuery] string? error,
+        [FromQuery(Name = "error_description")] string? errorDescription,
         CancellationToken cancellationToken)
     {
         var redirectUrl = await _externalAuthService.HandleCallbackAsync(
@@ -46,6 +47,7 @@ public class ExternalAuthController : ControllerBase
             code,
             state,
             error,
+            errorDescription,
             BuildCallbackUrl(provider),
             cancellationToken);
         return Redirect(redirectUrl);

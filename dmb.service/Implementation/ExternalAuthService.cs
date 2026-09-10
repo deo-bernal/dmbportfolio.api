@@ -99,6 +99,7 @@ public class ExternalAuthService : IExternalAuthService
         string? code,
         string? state,
         string? error,
+        string? errorDescription,
         string callbackUrl,
         CancellationToken cancellationToken = default)
     {
@@ -114,10 +115,12 @@ public class ExternalAuthService : IExternalAuthService
 
         if (!string.IsNullOrWhiteSpace(error))
         {
-            var message = string.Equals(error, "access_denied", StringComparison.OrdinalIgnoreCase)
-                ? $"{Title(normalized)} sign-in was cancelled."
-                : $"{Title(normalized)} sign-in failed.";
-            return ErrorRedirect(client, returnPath, message);
+            _logger.LogWarning(
+                "OAuth provider {Provider} returned error {Error}: {Description}",
+                normalized,
+                error,
+                errorDescription);
+            return ErrorRedirect(client, returnPath, DescribeProviderError(normalized, error, errorDescription));
         }
 
         if (parsedState is null)
@@ -504,7 +507,13 @@ public class ExternalAuthService : IExternalAuthService
                 ["client_secret"] = clientSecret
             }),
             cancellationToken);
-        tokenResponse.EnsureSuccessStatusCode();
+        if (!tokenResponse.IsSuccessStatusCode)
+        {
+            var body = await tokenResponse.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogWarning("LinkedIn token exchange failed ({Status}): {Body}", tokenResponse.StatusCode, body);
+            throw new InvalidOperationException("LinkedIn token exchange failed.");
+        }
+
         var token = await tokenResponse.Content.ReadFromJsonAsync<OAuthTokenResponse>(cancellationToken: cancellationToken)
             ?? throw new InvalidOperationException("LinkedIn token response was empty.");
 
@@ -706,6 +715,30 @@ public class ExternalAuthService : IExternalAuthService
         "facebook" => "Facebook",
         _ => provider
     };
+
+    private static string DescribeProviderError(string provider, string error, string? errorDescription)
+    {
+        if (string.Equals(error, "access_denied", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"{Title(provider)} sign-in was cancelled.";
+        }
+
+        if (string.Equals(error, "unauthorized_scope_error", StringComparison.OrdinalIgnoreCase)
+            || (errorDescription?.Contains("scope", StringComparison.OrdinalIgnoreCase) ?? false))
+        {
+            return "LinkedIn did not allow openid/profile/email. On the LinkedIn app, add the product \"Sign In with LinkedIn using OpenID Connect\", confirm those scopes on the Auth tab, then try again.";
+        }
+
+        var detail = (errorDescription ?? "").Trim();
+        if (detail.Length > 180)
+        {
+            detail = detail[..180];
+        }
+
+        return string.IsNullOrWhiteSpace(detail)
+            ? $"{Title(provider)} sign-in failed ({error})."
+            : $"{Title(provider)} sign-in failed: {detail}";
+    }
 
     private static string? GetSafeRedirectPath(string? value)
     {
