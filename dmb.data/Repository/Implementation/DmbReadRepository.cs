@@ -565,11 +565,34 @@ public class DmbReadRepository : IDmbReadRepository
     {
         var users = await _dbContext.Users
             .AsNoTracking()
-            .Include(user => user.ExternalLogins)
             .OrderBy(user => user.Email)
             .ToListAsync(cancellationToken);
 
-        return _mapper.Map<IReadOnlyList<AdminUserDto>>(users);
+        var loginRows = await _dbContext.ExternalLogins
+            .AsNoTracking()
+            .Select(login => new { login.UserId, login.Provider })
+            .ToListAsync(cancellationToken);
+
+        var providersByUserId = loginRows
+            .GroupBy(login => login.UserId)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .Select(login => login.Provider)
+                    .Where(provider => !string.IsNullOrWhiteSpace(provider))
+                    .Select(provider => provider.Trim().ToLowerInvariant())
+                    .Distinct()
+                    .OrderBy(provider => provider)
+                    .ToList());
+
+        return users.Select(user =>
+        {
+            var dto = _mapper.Map<AdminUserDto>(user);
+            dto.LinkedProviders = providersByUserId.TryGetValue(user.UserId, out var providers)
+                ? providers
+                : new List<string>();
+            return dto;
+        }).ToList();
     }
 
     public async Task<bool> TrySetUserIsAdminAsync(int targetUserId, bool isAdmin, CancellationToken cancellationToken = default)
