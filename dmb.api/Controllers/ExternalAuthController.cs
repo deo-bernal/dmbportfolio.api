@@ -96,10 +96,14 @@ public class ExternalAuthController : ControllerBase
         if (providerKey == "facebook")
         {
             var frontend = (_configuration["App:FrontendUrl"] ?? "").Trim().TrimEnd('/');
-            if (!string.IsNullOrWhiteSpace(frontend))
+            if (string.IsNullOrWhiteSpace(frontend) ||
+                frontend.Contains("localhost", StringComparison.OrdinalIgnoreCase) ||
+                frontend.Contains("onrender.com", StringComparison.OrdinalIgnoreCase))
             {
-                return $"{frontend}/api/auth/external/facebook/callback";
+                frontend = "https://www.dmbwebsolutions.com";
             }
+
+            return $"{frontend}/api/auth/external/facebook/callback";
         }
 
         var publicApi = (_configuration["App:PublicApiUrl"] ?? "").Trim().TrimEnd('/');
