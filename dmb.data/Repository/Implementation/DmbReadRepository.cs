@@ -565,6 +565,7 @@ public class DmbReadRepository : IDmbReadRepository
     {
         var users = await _dbContext.Users
             .AsNoTracking()
+            .Include(user => user.ExternalLogins)
             .OrderBy(user => user.Email)
             .ToListAsync(cancellationToken);
 

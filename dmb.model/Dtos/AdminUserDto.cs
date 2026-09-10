@@ -13,4 +13,6 @@ public class AdminUserDto
     public bool IsViewable { get; set; }
     public bool IsAdmin { get; set; }
     public bool IsSuperAdmin { get; set; }
+    public bool PasswordSet { get; set; } = true;
+    public IReadOnlyList<string> LinkedProviders { get; set; } = Array.Empty<string>();
 }

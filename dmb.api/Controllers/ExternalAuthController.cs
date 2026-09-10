@@ -90,13 +90,25 @@ public class ExternalAuthController : ControllerBase
 
     private string BuildCallbackUrl(string provider)
     {
+        var providerKey = provider.Trim().ToLowerInvariant();
+        // Facebook rejects *.onrender.com in App Domains (you must own the domain).
+        // Route the callback through the public site, which Vercel proxies to this API.
+        if (providerKey == "facebook")
+        {
+            var frontend = (_configuration["App:FrontendUrl"] ?? "").Trim().TrimEnd('/');
+            if (!string.IsNullOrWhiteSpace(frontend))
+            {
+                return $"{frontend}/api/auth/external/facebook/callback";
+            }
+        }
+
         var publicApi = (_configuration["App:PublicApiUrl"] ?? "").Trim().TrimEnd('/');
         if (!string.IsNullOrWhiteSpace(publicApi))
         {
-            return $"{publicApi}/auth/external/{provider.Trim().ToLowerInvariant()}/callback";
+            return $"{publicApi}/auth/external/{providerKey}/callback";
         }
 
         var pathBase = HttpContext.Request.PathBase.HasValue ? HttpContext.Request.PathBase.Value : "";
-        return $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{pathBase}/api/auth/external/{provider.Trim().ToLowerInvariant()}/callback";
+        return $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{pathBase}/api/auth/external/{providerKey}/callback";
     }
 }
