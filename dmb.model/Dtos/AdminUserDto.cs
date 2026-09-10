@@ -7,6 +7,10 @@ public class AdminUserDto
     public string FirstName { get; set; } = null!;
     public string LastName { get; set; } = null!;
     public string Email { get; set; } = null!;
+    public string? ContactNo { get; set; }
+    public string? Address { get; set; }
+    public bool Activated { get; set; }
+    public bool IsViewable { get; set; }
     public bool IsAdmin { get; set; }
     public bool IsSuperAdmin { get; set; }
 }

@@ -21,6 +21,8 @@ public interface IDmbReadService
     Task<bool> DeleteAccountAsync(int userId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AdminUserDto>> ListAdminUsersAsync(CancellationToken cancellationToken = default);
     Task<bool> TrySetUserIsAdminAsync(int targetUserId, bool isAdmin, CancellationToken cancellationToken = default);
+    Task<AdminUserMutationStatus> TryUpdateAdminUserAsync(int actorUserId, int targetUserId, UpdateAdminUserRequestDto request, CancellationToken cancellationToken = default);
+    Task<AdminUserMutationStatus> TryDeleteAdminUserAsync(int actorUserId, int targetUserId, CancellationToken cancellationToken = default);
     Task<bool> UserHasLeadAccessAsync(int userId, CancellationToken cancellationToken = default);
     Task<bool> UserIsSuperAdminAsync(int userId, CancellationToken cancellationToken = default);
 }

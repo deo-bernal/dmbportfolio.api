@@ -299,6 +299,32 @@ await using (var scope = app.Services.CreateAsyncScope())
             CREATE INDEX IF NOT EXISTS "IX_AppRefreshToken_UserId"
             ON "AppRefreshToken" ("UserId");
             """);
+
+        await dbContext.Database.ExecuteSqlRawAsync("""
+            CREATE OR REPLACE PROCEDURE "SP_DeleteAccount"(IN p_user_id INTEGER)
+            LANGUAGE plpgsql
+            AS $$
+            BEGIN
+                DELETE FROM "RevokedToken" WHERE "UserId" = p_user_id;
+                DELETE FROM "AppRefreshToken" WHERE "UserId" = p_user_id;
+                DELETE FROM "AccountActivationToken" WHERE "UserId" = p_user_id;
+                DELETE FROM "PasswordResetToken" WHERE "UserId" = p_user_id;
+                DELETE FROM "UserDetails" WHERE "UserId" = p_user_id;
+                DELETE FROM "Project" WHERE "UserId" = p_user_id;
+                DELETE FROM "WorkHistory" WHERE "UserId" = p_user_id;
+                DELETE FROM "Education" WHERE "UserId" = p_user_id;
+                DELETE FROM "Affiliation" WHERE "UserId" = p_user_id;
+                DELETE FROM "User" WHERE "UserId" = p_user_id;
+
+                DELETE FROM "ProjectType" pt
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM "Project" p
+                    WHERE p."ProjectTypeId" = pt."ProjectTypeId"
+                );
+            END;
+            $$;
+            """);
     }
     catch (Exception ex)
     {

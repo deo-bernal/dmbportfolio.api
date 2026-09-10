@@ -98,6 +98,16 @@ public class DmbReadService : IDmbReadService
         return _dmbReadRepository.TrySetUserIsAdminAsync(targetUserId, isAdmin, cancellationToken);
     }
 
+    public Task<AdminUserMutationStatus> TryUpdateAdminUserAsync(int actorUserId, int targetUserId, UpdateAdminUserRequestDto request, CancellationToken cancellationToken = default)
+    {
+        return _dmbReadRepository.TryUpdateAdminUserAsync(actorUserId, targetUserId, request, cancellationToken);
+    }
+
+    public Task<AdminUserMutationStatus> TryDeleteAdminUserAsync(int actorUserId, int targetUserId, CancellationToken cancellationToken = default)
+    {
+        return _dmbReadRepository.TryDeleteAdminUserAsync(actorUserId, targetUserId, cancellationToken);
+    }
+
     public Task<bool> UserHasLeadAccessAsync(int userId, CancellationToken cancellationToken = default)
     {
         return _dmbReadRepository.UserHasLeadAccessAsync(userId, cancellationToken);

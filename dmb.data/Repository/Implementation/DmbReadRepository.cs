@@ -302,11 +302,21 @@ public class DmbReadRepository : IDmbReadRepository
             return false;
         }
 
-        user.FirstName = request.PersonalInfo.FirstName.Trim();
-        user.LastName = request.PersonalInfo.LastName.Trim();
-        user.Email = request.PersonalInfo.Email.Trim();
-        user.ContactNo = request.PersonalInfo.ContactNo?.Trim();
-        user.Address = request.PersonalInfo.Address?.Trim();
+        var personal = request.PersonalInfo ?? new ResumePersonalInfoDto();
+        if (!string.IsNullOrWhiteSpace(personal.FirstName))
+        {
+            user.FirstName = personal.FirstName.Trim();
+        }
+        if (!string.IsNullOrWhiteSpace(personal.LastName))
+        {
+            user.LastName = personal.LastName.Trim();
+        }
+        if (!string.IsNullOrWhiteSpace(personal.Email))
+        {
+            user.Email = personal.Email.Trim();
+        }
+        user.ContactNo = personal.ContactNo?.Trim();
+        user.Address = personal.Address?.Trim();
 
         if (user.UserDetails is null)
         {
@@ -316,11 +326,15 @@ public class DmbReadRepository : IDmbReadRepository
                 CreatedAt = DateTimeOffset.UtcNow
             };
         }
-        user.UserDetails.Description = request.PersonalInfo.Summary?.Trim();
+        user.UserDetails.Description = personal.Summary?.Trim();
 
         _dbContext.WorkHistories.RemoveRange(user.WorkHistories);
         _dbContext.Educations.RemoveRange(user.Educations);
         _dbContext.Affiliations.RemoveRange(user.Affiliations);
+
+        request.WorkHistory ??= [];
+        request.Education ??= [];
+        request.Affiliations ??= [];
 
         var workHistories = request.WorkHistory
             .Where(x => !string.IsNullOrWhiteSpace(x.Company) && !string.IsNullOrWhiteSpace(x.Position))
@@ -462,6 +476,10 @@ public class DmbReadRepository : IDmbReadRepository
 
     private async Task ApplyProfileChangesAsync(User user, UpdateMyProfileDto request, CancellationToken cancellationToken)
     {
+        request.Contact ??= new UpdateMyProfileContactDto();
+        request.Skills ??= [];
+        request.ProjectCategories ??= [];
+
         if (!string.IsNullOrWhiteSpace(request.Contact.Email))
         {
             user.Email = request.Contact.Email.Trim();
@@ -524,7 +542,7 @@ public class DmbReadRepository : IDmbReadRepository
                 continue;
             }
 
-            foreach (var item in category.Items.Where(i => !string.IsNullOrWhiteSpace(i.Name)))
+            foreach (var item in (category.Items ?? []).Where(i => !string.IsNullOrWhiteSpace(i.Name)))
             {
                 projectsToAdd.Add(new Project
                 {
@@ -556,7 +574,7 @@ public class DmbReadRepository : IDmbReadRepository
     public async Task<bool> TrySetUserIsAdminAsync(int targetUserId, bool isAdmin, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users.FirstOrDefaultAsync(item => item.UserId == targetUserId, cancellationToken);
-        if (user is null)
+        if (user is null || user.IsSuperAdmin)
         {
             return false;
         }
@@ -564,6 +582,79 @@ public class DmbReadRepository : IDmbReadRepository
         user.IsAdmin = isAdmin;
         await _dbContext.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    public async Task<AdminUserMutationStatus> TryUpdateAdminUserAsync(
+        int actorUserId,
+        int targetUserId,
+        UpdateAdminUserRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users.FirstOrDefaultAsync(item => item.UserId == targetUserId, cancellationToken);
+        if (user is null)
+        {
+            return AdminUserMutationStatus.NotFound;
+        }
+
+        var firstName = (request.FirstName ?? string.Empty).Trim();
+        var lastName = (request.LastName ?? string.Empty).Trim();
+        var email = (request.Email ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName) || string.IsNullOrWhiteSpace(email))
+        {
+            return AdminUserMutationStatus.Conflict;
+        }
+
+        var emailTaken = await _dbContext.Users.AnyAsync(
+            item => item.UserId != targetUserId &&
+                    (item.Email.ToLower() == email || item.Username.ToLower() == email),
+            cancellationToken);
+        if (emailTaken)
+        {
+            return AdminUserMutationStatus.Conflict;
+        }
+
+        user.FirstName = firstName;
+        user.LastName = lastName;
+        user.Email = email;
+        user.Username = email;
+        user.ContactNo = string.IsNullOrWhiteSpace(request.ContactNo) ? null : request.ContactNo.Trim();
+        user.Address = string.IsNullOrWhiteSpace(request.Address) ? null : request.Address.Trim();
+        user.Activated = request.Activated;
+        user.IsViewable = request.IsViewable;
+        if (!user.IsSuperAdmin)
+        {
+            user.IsAdmin = request.IsAdmin;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return AdminUserMutationStatus.Ok;
+    }
+
+    public async Task<AdminUserMutationStatus> TryDeleteAdminUserAsync(
+        int actorUserId,
+        int targetUserId,
+        CancellationToken cancellationToken = default)
+    {
+        if (actorUserId == targetUserId)
+        {
+            return AdminUserMutationStatus.Forbidden;
+        }
+
+        var user = await _dbContext.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.UserId == targetUserId, cancellationToken);
+        if (user is null)
+        {
+            return AdminUserMutationStatus.NotFound;
+        }
+
+        if (user.IsSuperAdmin)
+        {
+            return AdminUserMutationStatus.Forbidden;
+        }
+
+        var deleted = await DeleteAccountAsync(targetUserId, cancellationToken);
+        return deleted ? AdminUserMutationStatus.Ok : AdminUserMutationStatus.NotFound;
     }
 
     public Task<bool> UserHasLeadAccessAsync(int userId, CancellationToken cancellationToken = default)

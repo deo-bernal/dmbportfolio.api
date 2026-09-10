@@ -63,6 +63,38 @@ public class DmbReadServiceTests
     }
 
     [Fact]
+    public async Task TryUpdateAdminUserAsync_DelegatesToRepository()
+    {
+        var request = new UpdateAdminUserRequestDto
+        {
+            FirstName = "Deo",
+            LastName = "Bernal",
+            Email = "deo@example.com"
+        };
+        _repository
+            .Setup(x => x.TryUpdateAdminUserAsync(1, 5, request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AdminUserMutationStatus.Ok);
+        var sut = CreateSut();
+
+        var status = await sut.TryUpdateAdminUserAsync(1, 5, request);
+
+        Assert.Equal(AdminUserMutationStatus.Ok, status);
+    }
+
+    [Fact]
+    public async Task TryDeleteAdminUserAsync_DelegatesToRepository()
+    {
+        _repository
+            .Setup(x => x.TryDeleteAdminUserAsync(1, 5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AdminUserMutationStatus.Ok);
+        var sut = CreateSut();
+
+        var status = await sut.TryDeleteAdminUserAsync(1, 5);
+
+        Assert.Equal(AdminUserMutationStatus.Ok, status);
+    }
+
+    [Fact]
     public async Task DeleteAccountAsync_DelegatesToRepository()
     {
         _repository
