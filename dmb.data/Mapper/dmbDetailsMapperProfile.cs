@@ -10,7 +10,14 @@ public class DmbDetailsMapperProfile : Profile
     {
         CreateMap<User, UserDto>();
         CreateMap<User, UserCompleteDetailsDto>();
-        CreateMap<User, AdminUserDto>();
+        CreateMap<User, AdminUserDto>()
+            .ForMember(
+                destination => destination.LinkedProviders,
+                options => options.MapFrom(source =>
+                    source.ExternalLogins
+                        .Select(login => login.Provider)
+                        .OrderBy(provider => provider)
+                        .ToList()));
 
         CreateMap<UserDetails, UserDetailsDto>()
             .ForMember(destination => destination.User, options => options.Ignore());
