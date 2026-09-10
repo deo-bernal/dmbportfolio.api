@@ -48,6 +48,22 @@ public class EmailService : IEmailService, IActivationEmailSender, IPasswordRese
         await SendByConfiguredProviderAsync(toEmail, subject, htmlBody, cancellationToken);
     }
 
+    public Task SendExternalLoginCodeEmailAsync(
+        string toEmail,
+        string code,
+        CancellationToken cancellationToken = default)
+    {
+        const string subject = "Your DMB Web Solutions sign-in code";
+        var encoded = System.Net.WebUtility.HtmlEncode(code);
+        var htmlBody = $@"
+            <h2>Confirm your email</h2>
+            <p>Use this 6-digit code to finish signing in with your social account.</p>
+            <p style=""font-size:28px;letter-spacing:0.2em;font-weight:700;"">{encoded}</p>
+            <p>This code expires in 15 minutes. If you did not request it, you can ignore this email.</p>
+        ";
+        return SendByConfiguredProviderAsync(toEmail, subject, htmlBody, cancellationToken);
+    }
+
     public async Task SendActivationMonitoringEmailAsync(
         string monitoringEmail,
         string activatedAccountEmail,

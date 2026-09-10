@@ -23,4 +23,6 @@ public interface IAuthRepository
     (string PasswordHash, string PasswordSalt) CreatePasswordHash(string password);
     string HashPassword(string password, string passwordSalt);
     bool VerifyPassword(string password, string passwordSalt, string passwordHash);
+    Task<AuthTokenLoginResult> IssueJwtForUserAsync(int userId, CancellationToken cancellationToken = default);
+    Task<AuthTokenLoginResult> IssueAppTokensForUserAsync(int userId, CancellationToken cancellationToken = default);
 }

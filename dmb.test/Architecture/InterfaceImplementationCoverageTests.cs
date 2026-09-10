@@ -9,6 +9,7 @@ public class InterfaceImplementationCoverageTests
 {
     [Theory]
     [InlineData(typeof(IAuthService), typeof(AuthService))]
+    [InlineData(typeof(IExternalAuthService), typeof(ExternalAuthService))]
     [InlineData(typeof(IDmbReadService), typeof(DmbReadService))]
     [InlineData(typeof(IRegistrationService), typeof(RegistrationService))]
     [InlineData(typeof(IEmailService), typeof(EmailService))]

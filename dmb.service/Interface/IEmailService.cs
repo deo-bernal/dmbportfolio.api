@@ -4,4 +4,5 @@ public interface IEmailService
 {
     Task SendPasswordResetEmailAsync(string toEmail, string resetLink, CancellationToken cancellationToken = default);
     Task SendAccountActivationEmailAsync(string toEmail, string activationLink, CancellationToken cancellationToken = default);
+    Task SendExternalLoginCodeEmailAsync(string toEmail, string code, CancellationToken cancellationToken = default);
 }

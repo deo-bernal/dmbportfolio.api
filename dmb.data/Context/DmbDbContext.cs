@@ -20,6 +20,8 @@ namespace Dmb.Data.Context
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
         public DbSet<AccountActivationToken> AccountActivationTokens { get; set; } = null!;
         public DbSet<AppRefreshToken> AppRefreshTokens { get; set; } = null!;
+        public DbSet<ExternalLogin> ExternalLogins { get; set; } = null!;
+        public DbSet<PendingExternalLogin> PendingExternalLogins { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -127,6 +129,27 @@ namespace Dmb.Data.Context
                 entity.Property(t => t.CreatedAt).ValueGeneratedOnAdd();
             });
 
+            modelBuilder.Entity<ExternalLogin>(entity =>
+            {
+                entity.HasIndex(l => new { l.Provider, l.ProviderUserId })
+                    .IsUnique()
+                    .HasDatabaseName("UX_ExternalLogin_Provider_ProviderUserId");
+                entity.HasIndex(l => new { l.UserId, l.Provider })
+                    .IsUnique()
+                    .HasDatabaseName("UX_ExternalLogin_UserId_Provider");
+                entity.HasOne(l => l.User)
+                    .WithMany(u => u.ExternalLogins)
+                    .HasForeignKey(l => l.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(l => l.CreatedAt).ValueGeneratedOnAdd();
+            });
+
+            modelBuilder.Entity<PendingExternalLogin>(entity =>
+            {
+                entity.HasIndex(p => p.Ticket).IsUnique().HasDatabaseName("UX_PendingExternalLogin_Ticket");
+                entity.Property(p => p.CreatedAt).ValueGeneratedOnAdd();
+            });
+
             // Configure CreatedAt to be generated on add (consumer may set default in DB/provider)
             modelBuilder.Entity<User>().Property(u => u.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<UserDetails>().Property(ud => ud.CreatedAt).ValueGeneratedOnAdd();
@@ -139,6 +162,8 @@ namespace Dmb.Data.Context
             modelBuilder.Entity<PasswordResetToken>().Property(t => t.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<AccountActivationToken>().Property(t => t.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<AppRefreshToken>().Property(t => t.CreatedAt).ValueGeneratedOnAdd();
+            modelBuilder.Entity<ExternalLogin>().Property(l => l.CreatedAt).ValueGeneratedOnAdd();
+            modelBuilder.Entity<PendingExternalLogin>().Property(p => p.CreatedAt).ValueGeneratedOnAdd();
         }
     }
 }

@@ -321,6 +321,14 @@ public class AuthRepository : IAuthRepository
 
         if (!VerifyPassword(password, user.PasswordSalt, user.PasswordHash))
         {
+            if (!user.PasswordSet)
+            {
+                return new LoginResult
+                {
+                    BlockReason = "This account uses Google, LinkedIn, or Facebook. Continue with a social button, or use Forgot password to set one."
+                };
+            }
+
             return new LoginResult();
         }
 
@@ -465,6 +473,7 @@ public class AuthRepository : IAuthRepository
             Email = user.Email,
             ContactNo = user.ContactNo,
             Activated = user.Activated,
+            PasswordSet = user.PasswordSet,
             IsViewable = user.IsViewable,
             CreatedAt = user.CreatedAt
         };
@@ -503,5 +512,71 @@ public class AuthRepository : IAuthRepository
         });
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task<AuthTokenLoginResult> IssueJwtForUserAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return IssueTokensForUserAsync(userId, includeRefresh: false, cancellationToken);
+    }
+
+    public Task<AuthTokenLoginResult> IssueAppTokensForUserAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return IssueTokensForUserAsync(userId, includeRefresh: true, cancellationToken);
+    }
+
+    private async Task<AuthTokenLoginResult> IssueTokensForUserAsync(
+        int userId,
+        bool includeRefresh,
+        CancellationToken cancellationToken)
+    {
+        var user = await _dbContext.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
+        if (user is null)
+        {
+            return new AuthTokenLoginResult { Status = AuthTokenLoginStatus.InvalidCredentials };
+        }
+
+        if (!user.Activated)
+        {
+            return new AuthTokenLoginResult
+            {
+                Status = AuthTokenLoginStatus.AccountBlocked,
+                BlockReason = "Your account is not activated yet. Use the activation link we emailed you."
+            };
+        }
+
+        var loginUser = new LoggedInUserDto
+        {
+            UserId = user.UserId,
+            Username = user.Username,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            Activated = user.Activated,
+            CreatedAt = user.CreatedAt,
+            IsAdmin = user.IsAdmin,
+            IsSuperAdmin = user.IsSuperAdmin
+        };
+
+        var accessToken = CreateAccessToken(loginUser);
+        if (!includeRefresh)
+        {
+            return new AuthTokenLoginResult
+            {
+                Status = AuthTokenLoginStatus.Success,
+                AccessToken = accessToken
+            };
+        }
+
+        var refreshToken = await RotateRefreshTokenAsync(user.UserId, cancellationToken);
+        var isPinSet = !string.IsNullOrEmpty(user.AppPinHash) && !string.IsNullOrEmpty(user.AppPinSalt);
+        return new AuthTokenLoginResult
+        {
+            Status = AuthTokenLoginStatus.Success,
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            IsPinSet = isPinSet
+        };
     }
 }

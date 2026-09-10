@@ -12,6 +12,7 @@ public class UserDto
     public string? Address { get; set; }
     public string? ContactNo { get; set; }
     public bool Activated { get; set; }
+    public bool PasswordSet { get; set; } = true;
     public bool IsViewable { get; set; }
     public bool IsAdmin { get; set; }
     public bool IsSuperAdmin { get; set; }

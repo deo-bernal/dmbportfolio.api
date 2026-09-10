@@ -110,6 +110,7 @@ public class PasswordResetRepository : IPasswordResetRepository
         var (passwordHash, passwordSalt) = _authRepository.CreatePasswordHash(request.NewPassword);
         resetToken.User.PasswordHash = passwordHash;
         resetToken.User.PasswordSalt = passwordSalt;
+        resetToken.User.PasswordSet = true;
 
         _dbContext.PasswordResetTokens.Remove(resetToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
