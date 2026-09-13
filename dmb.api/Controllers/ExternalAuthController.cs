@@ -42,6 +42,16 @@ public class ExternalAuthController : ControllerBase
         [FromQuery(Name = "error_description")] string? errorDescription,
         CancellationToken cancellationToken)
     {
+        if (!string.IsNullOrWhiteSpace(state) &&
+            state.StartsWith("crm.", StringComparison.Ordinal))
+        {
+            var providerKey = provider.Trim().ToLowerInvariant();
+            var query = HttpContext.Request.QueryString.HasValue
+                ? HttpContext.Request.QueryString.Value
+                : "";
+            return Redirect($"https://dmb-crm-api.onrender.com/api/auth/external/{providerKey}/callback{query}");
+        }
+
         var redirectUrl = await _externalAuthService.HandleCallbackAsync(
             provider,
             code,
