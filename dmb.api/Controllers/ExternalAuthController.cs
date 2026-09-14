@@ -115,8 +115,17 @@ public class ExternalAuthController : ControllerBase
                 frontend = "https://www.dmbwebsolutions.com";
             }
 
-            // Chrome Safe Browsing flags *.onrender.com OAuth returns. Facebook also rejects them.
-            return $"{frontend}/api/auth/external/{providerKey}/callback";
+            // Facebook rejects *.onrender.com. LinkedIn's return to Render is blocked by Chrome.
+            if (providerKey is "facebook" or "linkedin")
+            {
+                return $"{frontend}/api/auth/external/{providerKey}/callback";
+            }
+
+            var publicApi = (_configuration["App:PublicApiUrl"] ?? "").Trim().TrimEnd('/');
+            if (!string.IsNullOrWhiteSpace(publicApi))
+            {
+                return $"{publicApi}/auth/external/{providerKey}/callback";
+            }
         }
 
         var pathBase = HttpContext.Request.PathBase.HasValue ? HttpContext.Request.PathBase.Value : "";
