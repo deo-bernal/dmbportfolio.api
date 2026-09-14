@@ -50,10 +50,9 @@ public class ExternalAuthController : ControllerBase
             var query = HttpContext.Request.QueryString.HasValue
                 ? HttpContext.Request.QueryString.Value
                 : "";
-            var apiHost = state.StartsWith("lms.", StringComparison.Ordinal)
-                ? "https://dmb-lms-api.onrender.com"
-                : "https://dmb-crm-api.onrender.com";
-            return Redirect($"{apiHost}/api/auth/external/{providerKey}/callback{query}");
+            var workspace = state.StartsWith("lms.", StringComparison.Ordinal) ? "lms" : "crm";
+            // Stay on the public site. A hop to *.onrender.com is intercepted as "Dangerous site".
+            return Redirect($"https://www.dmbwebsolutions.com/{workspace}/api/auth/external/{providerKey}/callback{query}");
         }
 
         var redirectUrl = await _externalAuthService.HandleCallbackAsync(
@@ -105,25 +104,19 @@ public class ExternalAuthController : ControllerBase
     private string BuildCallbackUrl(string provider)
     {
         var providerKey = provider.Trim().ToLowerInvariant();
-        // Facebook rejects *.onrender.com in App Domains (you must own the domain).
-        // Route the callback through the public site, which Vercel proxies to this API.
-        if (providerKey == "facebook")
+        var frontend = (_configuration["App:FrontendUrl"] ?? "").Trim().TrimEnd('/');
+        var isLocal = string.IsNullOrWhiteSpace(frontend)
+            || frontend.Contains("localhost", StringComparison.OrdinalIgnoreCase);
+
+        if (!isLocal)
         {
-            var frontend = (_configuration["App:FrontendUrl"] ?? "").Trim().TrimEnd('/');
-            if (string.IsNullOrWhiteSpace(frontend) ||
-                frontend.Contains("localhost", StringComparison.OrdinalIgnoreCase) ||
-                frontend.Contains("onrender.com", StringComparison.OrdinalIgnoreCase))
+            if (frontend.Contains("onrender.com", StringComparison.OrdinalIgnoreCase))
             {
                 frontend = "https://www.dmbwebsolutions.com";
             }
 
-            return $"{frontend}/api/auth/external/facebook/callback";
-        }
-
-        var publicApi = (_configuration["App:PublicApiUrl"] ?? "").Trim().TrimEnd('/');
-        if (!string.IsNullOrWhiteSpace(publicApi))
-        {
-            return $"{publicApi}/auth/external/{providerKey}/callback";
+            // Chrome Safe Browsing flags *.onrender.com OAuth returns. Facebook also rejects them.
+            return $"{frontend}/api/auth/external/{providerKey}/callback";
         }
 
         var pathBase = HttpContext.Request.PathBase.HasValue ? HttpContext.Request.PathBase.Value : "";
