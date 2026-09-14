@@ -43,13 +43,17 @@ public class ExternalAuthController : ControllerBase
         CancellationToken cancellationToken)
     {
         if (!string.IsNullOrWhiteSpace(state) &&
-            state.StartsWith("crm.", StringComparison.Ordinal))
+            (state.StartsWith("crm.", StringComparison.Ordinal) ||
+             state.StartsWith("lms.", StringComparison.Ordinal)))
         {
             var providerKey = provider.Trim().ToLowerInvariant();
             var query = HttpContext.Request.QueryString.HasValue
                 ? HttpContext.Request.QueryString.Value
                 : "";
-            return Redirect($"https://dmb-crm-api.onrender.com/api/auth/external/{providerKey}/callback{query}");
+            var apiHost = state.StartsWith("lms.", StringComparison.Ordinal)
+                ? "https://dmb-lms-api.onrender.com"
+                : "https://dmb-crm-api.onrender.com";
+            return Redirect($"{apiHost}/api/auth/external/{providerKey}/callback{query}");
         }
 
         var redirectUrl = await _externalAuthService.HandleCallbackAsync(
