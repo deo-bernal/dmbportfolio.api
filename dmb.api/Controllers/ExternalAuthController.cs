@@ -44,13 +44,19 @@ public class ExternalAuthController : ControllerBase
     {
         if (!string.IsNullOrWhiteSpace(state) &&
             (state.StartsWith("crm.", StringComparison.Ordinal) ||
-             state.StartsWith("lms.", StringComparison.Ordinal)))
+             state.StartsWith("lms.", StringComparison.Ordinal) ||
+             state.StartsWith("commerce.", StringComparison.Ordinal) ||
+             state.StartsWith("agent.", StringComparison.Ordinal)))
         {
             var providerKey = provider.Trim().ToLowerInvariant();
             var query = HttpContext.Request.QueryString.HasValue
                 ? HttpContext.Request.QueryString.Value
                 : "";
-            var workspace = state.StartsWith("lms.", StringComparison.Ordinal) ? "lms" : "crm";
+            var workspace = state.StartsWith("agent.", StringComparison.Ordinal)
+                ? "agent"
+                : state.StartsWith("commerce.", StringComparison.Ordinal)
+                ? "commerce"
+                : state.StartsWith("lms.", StringComparison.Ordinal) ? "lms" : "crm";
             // Stay on the public site. A hop to *.onrender.com is intercepted as "Dangerous site".
             return Redirect($"https://www.dmbwebsolutions.com/{workspace}/api/auth/external/{providerKey}/callback{query}");
         }

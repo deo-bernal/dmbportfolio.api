@@ -435,6 +435,9 @@ if (!app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Keep-alive / cold-start probe (Google SSO callback host).
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
 // Map controllers with attribute routing
 app.MapControllers();
 
