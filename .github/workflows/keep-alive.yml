@@ -2,15 +2,22 @@
 
 on:
   schedule:
-    - cron: "*/12 * * * *"
+    - cron: "*/8 * * * *"
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Wake Render Portfolio API (shared Google SSO callback)
+      - name: Wake all DMB Render APIs
         run: |
-          curl -fsS -o /dev/null -w "portfolio health=%{time_total}s code=%{http_code}\n" \
+          for url in \
             "https://dmbportfolio-api.onrender.com/health" \
-            --max-time 60
+            "https://dmb-crm-api.onrender.com/health" \
+            "https://dmb-lms-api.onrender.com/health" \
+            "https://dmb-commerce-api.onrender.com/health" \
+            "https://dmb-agent-api.onrender.com/health"
+          do
+            curl -fsS -o /dev/null -w "%{url_effective} %{time_total}s code=%{http_code}\n" \
+              "$url" --max-time 90 || true
+          done
