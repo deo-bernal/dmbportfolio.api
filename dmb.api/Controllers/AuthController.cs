@@ -26,7 +26,7 @@ public class AuthController : ControllerBase
         {
             AuthTokenLoginStatus.AccountBlocked => StatusCode(StatusCodes.Status403Forbidden, new { message = result.BlockReason }),
             AuthTokenLoginStatus.Success => Ok(new { token = result.AccessToken }),
-            _ => Unauthorized()
+            _ => Unauthorized(new { message = "Invalid username or password." })
         };
     }
 

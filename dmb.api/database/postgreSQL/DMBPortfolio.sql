@@ -356,10 +356,10 @@ ALTER TABLE "Project"
     ADD CONSTRAINT "UQ_Project_User_Name_ProjectType" UNIQUE ("UserId", "Name", "ProjectTypeId");
 
 -- 3) Seed Users (based on ProfileController response)
--- Actual password for the seeded user: Password@123
+-- Actual password for the seeded user: Test@123 (aligned with CRM/LMS/Commerce/Agent demos)
 INSERT INTO "User" ("Username", "PasswordHash", "PasswordSalt", "FirstName", "LastName", "Email", "Address", "ContactNo", "Activated", "IsViewable", "IsAdmin", "IsSuperAdmin", "CreatedAt")
 VALUES
-('deobernal@gmail.com', 'vHgVB+7WP1+kaDN0PgGjr0p+sqtr1avXf+WGkpRlYb6eI6PdvsU/BuNMyus+sJX2PN3XWOAq67s4HaCs9N1f4w==', 'nL3mQ8vX1pR7kD5sT2wB9A==', 'Deo', 'Bernal', 'deobernal@gmail.com', NULL, '+63 925 455 6063', TRUE, TRUE, TRUE, TRUE, NOW())
+('deobernal@gmail.com', 'QmaGEYAuyyJNFY3aOtTiNHa1xnFGOyxLGSwJ9Gfj7oeEqByTB2t3eaVUiofzbAjWNqOCkQqT+zqohZqjnkIiUQ==', 'nL3mQ8vX1pR7kD5sT2wB9A==', 'Deo', 'Bernal', 'deobernal@gmail.com', NULL, '+63 925 455 6063', TRUE, TRUE, TRUE, TRUE, NOW())
 ON CONFLICT ("Username") DO UPDATE
 SET
     "PasswordHash" = EXCLUDED."PasswordHash",

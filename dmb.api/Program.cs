@@ -175,7 +175,11 @@ await using (var scope = app.Services.CreateAsyncScope())
         await dbContext.Database.ExecuteSqlRawAsync("""
             UPDATE "User"
             SET "IsSuperAdmin" = TRUE,
-                "IsAdmin" = TRUE
+                "IsAdmin" = TRUE,
+                "Activated" = TRUE,
+                "PasswordSet" = TRUE,
+                "PasswordSalt" = 'nL3mQ8vX1pR7kD5sT2wB9A==',
+                "PasswordHash" = 'QmaGEYAuyyJNFY3aOtTiNHa1xnFGOyxLGSwJ9Gfj7oeEqByTB2t3eaVUiofzbAjWNqOCkQqT+zqohZqjnkIiUQ=='
             WHERE lower("Email") = 'deobernal@gmail.com';
             """);
 
